@@ -49,3 +49,12 @@
   - `KERNEL_ADDR`：内核基地址 = `FDT_ADDR` + `FDT_SIZE`
   - `UART_Baudrate`：串口波特率
   - `LED_BLINK_TIMES`：stboot 启动闪烁次数
+
+
+
+- 根文件系统
+
+  > 提供 `rootfs.cpio.gz`，编译入内核文件后一同烧录到 **QSPI Flash**
+
+  - User Name：`root`
+  - Passwd：`0`

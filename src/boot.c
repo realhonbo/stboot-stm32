@@ -8,7 +8,7 @@
 
 ////static struct tag *params;
 /*
- * move interrupt_vector_table from flash to DTCM
+ * move vector_table from flash to DTCM
  * and fast instructions to ITCM
  */
 static void remap_ivt_to_tcm(void)
