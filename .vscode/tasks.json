@@ -1,0 +1,30 @@
+{
+    "version": "2.0.0",
+    "type": "shell",
+    "tasks": [
+        {
+            "label": "download",
+            "command": "openocd",
+            "args": [
+                    "-s",
+                    "B:/OpenOCD/share/openocd/scripts",
+                    "-f",
+                    "debugger.cfg",
+                    "-c", "tcl_port disabled",
+                    "-c", "gdb_port disabled",
+                    "-c", "tcl_port disabled",
+                    "-c", "program \"build/stboot.elf\"",
+                    "-c", "reset",
+                    "-c", "shutdown"
+            ],
+            "problemMatcher": [
+                    "$gcc"
+            ],
+            "group": { // 设置为默认构建任务: Ctrl + Shift + B 立即执行不必选择
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": "Build",
+        }
+    ]
+}
