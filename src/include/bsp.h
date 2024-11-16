@@ -29,5 +29,6 @@ void sdram_init(void);
 void led_init(void);
 void uart1_tty_init(void);
 void Error_Handler(char *file, int line);
+void error_print(void);
 
 #endif

@@ -23,7 +23,7 @@
 	leds {
 		compatible = "gpio-leds";
 		led-green {
-			gpios = <&gpioc 13 0>;
+			gpios = <&gpioc 13 1>;
 			linux,default-trigger = "heartbeat";
 		};
     };
@@ -74,4 +74,13 @@
 	pinctrl-0 = <&usart1_pins>;
 	pinctrl-names = "default";
 	status = "okay";
+};
+
+&usart1_pins {
+	pins1 {
+		pinmux = <STM32_PINMUX('A',  9, AF7)>;
+	};
+	pins2 {
+		pinmux = <STM32_PINMUX('A', 10, AF7)>;
+	};
 };

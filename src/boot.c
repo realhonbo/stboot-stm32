@@ -41,24 +41,21 @@ static void kernel_entry()
     printf("\r\n");
     printf("[ boot ]: succeed, ready to boot kernel... \r\n");
     printf("\r\n");
-    //// __asm volatile (
-    //// "mov r0, #0 \n"  // must be zero
-    //// "mov r1, #~0 \n" // arch: not specified, depends on fdt
-    //// "ldr r2, =0x08100000 \n" // fdt address
-    //// "ldr pc, =0x90008001"
-    //// );
+    // dcache should be closed before kernel init
+    SCB_DisableDCache();
+    ////asm volatile ( "ldr pc, =0x08020001" );
     void (*kernel)(__u32 reserved, __u32 mach, __u32 fdt) =
             ( void (*)(__u32, __u32, __u32))(KERNEL_ADDR | 1);
     kernel(0, ~0, FDT_ADDR);
 }
-
 
 int main(void) {
     ////remap_ivt_to_tcm();
     // init i/dcache
     mpu_config();
     SCB_EnableICache();
-    ////SCB_EnableDCache();
+    SCB_EnableDCache();
+    
     // config system clock
     HAL_Init();
     sysclk_config();
@@ -73,8 +70,7 @@ int main(void) {
 
     // config sdram
     sdram_init();
-    
+
     // jump to kernel
-    ////SCB_CleanDCache();
     kernel_entry();
 }

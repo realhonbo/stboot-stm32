@@ -26,7 +26,9 @@ add_compile_options(
         --include-directory=${TOOLCHAIN_PATH}/arm-none-eabi/include
         # assembler files preprocessing
         $<$<COMPILE_LANGUAGE:ASM>:-x$<SEMICOLON>assembler-with-cpp>
-        -Og -g # optimization level
+        # optimization level
+        # -Og -g
+        -O3
 )
 
 include_directories(
@@ -47,6 +49,7 @@ file(GLOB_RECURSE SOURCES
         "core/*.*"
         "drivers/*.*"
         "src/*.*"
+        "test/*.*"
 )
 
 set(LINKER_SCRIPT
