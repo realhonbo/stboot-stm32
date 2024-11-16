@@ -20,14 +20,22 @@
 
 - 编译平台
 
+  - **WSL2：Ubuntu24.04**
+
+    > Ubuntu中使用 *arm-none-eabi-gcc* 交叉编译 kernel 和 buildroot
+    >
+    > 请使用 *arm-none-eabi-gcc-11* 及以上版本，否则内核有可能无法识别 Cortex-M7 的 cpuid
+    
   - **Windows 11**
 
+    > 编译 stboot
+    >
     > 注意修改 cmake 路径 与 mcu 型号
-
+    
     ```cmake
     5:  set(TOOLCHAIN_PATH         B:/arm-gnu-toolchain ) #! toolchain location
     ```
-
+    
     ```cmake
     44: add_definitions(-DUSE_HAL_DRIVER -DSTM32H743xx) #! H743
     ```
