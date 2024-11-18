@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#ifdef COMPILE_LINUX_EXE
 int main()
 {
 	int i;
@@ -10,3 +11,4 @@ int main()
 		sleep(1);
 	}
 }
+#endif

@@ -24,6 +24,7 @@
 void SysTick_Handler(void)
 {
         HAL_IncTick();
+        led_timer_handler();
 }
 
 void HardFault_Handler(void)

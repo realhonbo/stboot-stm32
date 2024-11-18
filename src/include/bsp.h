@@ -18,7 +18,7 @@
 #define KERNEL_ADDR            (QSPI_FLASH_BASE_ADDR + FDT_SIZE)
 
 #define UART_Baudrate           115200
-#define LED_BLINK_TIMES         2
+#define LED_BLINK_TIME          10
 
 
 
@@ -27,6 +27,7 @@ void sysclk_config(void);
 void mpu_config(void);
 void sdram_init(void);
 void led_init(void);
+void led_timer_handler(void);
 void uart1_tty_init(void);
 void Error_Handler(char *file, int line);
 void error_print(void);

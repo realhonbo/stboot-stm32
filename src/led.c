@@ -1,5 +1,5 @@
 /**
- * @file gpio.c
+ * @file led.c
  * @author Honbo (hehongbo918@gmail.com)
  * @brief blink `LED_BLINK_TIMES` times when stboot start
  * @version 1.0
@@ -10,6 +10,8 @@
 #include <stm32h7xx_hal.h>
 #include <stdio.h>
 #include "bsp.h"
+
+static int stick;
 
 void led_init(void)
 {
@@ -27,8 +29,15 @@ void led_init(void)
 
         printf("[ led ]: led enabled \r\n");
 
-        for(int i = 0; i < LED_BLINK_TIMES * 2; i++) {
-            HAL_Delay(100);
-            HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+        stick = HAL_GetTick();
+}
+
+void led_timer_handler()
+{
+        int etick = HAL_GetTick();
+
+        if (etick - stick > LED_BLINK_TIME) {
+                HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+                stick = etick;
         }
 }

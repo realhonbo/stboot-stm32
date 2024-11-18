@@ -37,12 +37,13 @@ static void remap_ivt_to_tcm(void)
  */
 static void kernel_entry()
 {
-    printf("[ bootargs ]: kernel addr: %x, fdt addr: %x\r\n", KERNEL_ADDR, FDT_ADDR);
+    printf("[ bootargs ]: kernel addr: 0x%x, fdt addr: 0x%x\r\n", KERNEL_ADDR, FDT_ADDR);
     printf("\r\n");
-    printf("[ boot ]: succeed, ready to boot kernel... \r\n");
+    printf("[ boot ]: st-boot took %dms, ready to boot kernel... \r\n", HAL_GetTick());
     printf("\r\n");
     // dcache should be closed before kernel init
     SCB_DisableDCache();
+    asm volatile ("cpsid i");
     ////asm volatile ( "ldr pc, =0x08020001" );
     void (*kernel)(__u32 reserved, __u32 mach, __u32 fdt) =
             ( void (*)(__u32, __u32, __u32))(KERNEL_ADDR | 1);
@@ -50,13 +51,13 @@ static void kernel_entry()
 }
 
 int main(void) {
-    ////remap_ivt_to_tcm();
+    remap_ivt_to_tcm();
+
     // init i/dcache
+    // config system clock
     mpu_config();
     SCB_EnableICache();
     SCB_EnableDCache();
-    
-    // config system clock
     HAL_Init();
     sysclk_config();
 
@@ -64,11 +65,9 @@ int main(void) {
     uart1_tty_init();
     led_init();
     
-    // set nor_flash, and xip to mm
+    // set nor_flash and sdram
     QSPI_W25Qxx_Init();
     QSPI_W25Qxx_MMMode();
-
-    // config sdram
     sdram_init();
 
     // jump to kernel
