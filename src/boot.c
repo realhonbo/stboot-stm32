@@ -26,8 +26,10 @@ static void remap_ivt_to_tcm(void)
 }
 
 /**
- * jump to kernel
-
+ ** kernel(0, ~0, FDT_ADDR);
+ *
+ * void (*kernel)(__u32 reserved, __u32 mach, __u32 fdt) =
+            ( void (*)(__u32, __u32, __u32))(KERNEL_ADDR | 1);
  * @b  reserved
  * @b  mach: match machine_id in linux: arch/arm/mach-
  *           if use DT, set ~0
@@ -43,16 +45,19 @@ static void kernel_entry()
     printf("\r\n");
     // dcache should be closed before kernel init
     SCB_DisableDCache();
-    asm volatile ("cpsid i");
-    ////asm volatile ( "ldr pc, =0x08020001" );
-    void (*kernel)(__u32 reserved, __u32 mach, __u32 fdt) =
-            ( void (*)(__u32, __u32, __u32))(KERNEL_ADDR | 1);
-    kernel(0, ~0, FDT_ADDR);
+    asm volatile ( "ldr r0, [%0]\n"
+    "bic r0, r0, #0x3\n"
+    "str r0, [%0]\n" // close systick irq
+    "cpsid i\n"
+    "mov r0, #0\n"
+    "mvn r1, #0\n"
+    "mov r2, %1\n"
+    "bx %2"
+    ::"r"(SysTick_BASE),"r"(FDT_ADDR), "r"(KERNEL_ADDR | 1)
+    :"memory","cc","r0","r1","r2");
 }
 
 int main(void) {
-    remap_ivt_to_tcm();
-
     // init i/dcache
     // config system clock
     mpu_config();
