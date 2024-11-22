@@ -1,3 +1,12 @@
+/**
+ * @file bsp.c
+ * @author Honbo (hehongbo918@gmail.com)
+ * @brief mpu and clock config
+ * @version 1.0
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
 #include <stm32h7xx_hal.h>
 #include <stdio.h>
 #include <string.h>

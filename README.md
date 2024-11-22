@@ -43,7 +43,6 @@
 
 
 - 启动行为
-  - vector_table 重映射到 DTCM
   - 配置  Cache 对于 内存 和 Flash 的读写策略：`mpu_config`
   - 系统时钟设定为 480 MHz：`sysclk_config`
   - 启用串口 1 作为输出： `uart1_tty_init`
@@ -199,7 +198,7 @@
     modprobe: can't change directory to '6.11.0-g29002a45fd6e-dirty': No such file or directory
     
     Welcome to Buildroot
-    boboo login: root
+    user login: root
     Password: 
     Jan  1 00:00:19 login [47]: root login on 'console'
     ~ # uname -a

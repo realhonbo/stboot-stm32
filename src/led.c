@@ -32,7 +32,7 @@ void led_init(void)
         stick = HAL_GetTick();
 }
 
-void led_timer_handler()
+void led_timer_handler(void)
 {
         int etick = HAL_GetTick();
 
