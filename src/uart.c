@@ -10,10 +10,45 @@
 #include <stm32h7xx_hal.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include "bsp.h"
 
 static UART_HandleTypeDef tty;
 
+static char epb_buffer[EPB_SIZE];
+static int  epb_ptr, n_ebpstr;
+
+/*
+ * early message before tty init
+ */
+void early_pr_info(const char *early_fmt)
+{
+    for(int i = 0; i < strlen(early_fmt); i++)
+        epb_buffer[epb_ptr++] = early_fmt[i];
+    epb_buffer[epb_ptr++] = '\0';
+    n_ebpstr++;
+}
+
+static void flush_early_info(void)
+{
+    char string[128];
+    int i, p = 0;
+
+    for (int n = 0; n < n_ebpstr; n++) {
+        i = 0;
+        while (epb_buffer[p] != '\0') {
+            string[i] = epb_buffer[p++];
+            i++;
+        }
+        pr_info("%s", string);
+        memset(string, '\0', sizeof(string));
+        p += 1; // jmp '\0'
+    }
+}
+
+/*
+ * print info
+ */
 int __io_putchar(int ch)
 {
     HAL_UART_Transmit(&tty, (uint8_t *)&ch, 1, 100);
@@ -34,6 +69,10 @@ void pr_info(const char *fmt, ...)
     printf("\r\n");
 }
 
+
+/*
+ * uart config
+ */
 void uart1_tty_init(void)
 {
     tty.Instance        = USART1;
@@ -61,6 +100,7 @@ void uart1_tty_init(void)
     printf("/_____/   |_|   |_____/ \\_____/ \\_____/   |_|   \r\n");
     printf("\r\n");
 
+    flush_early_info();
     pr_info("tty: uart1 init success");
 }
 

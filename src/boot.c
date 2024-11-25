@@ -23,6 +23,7 @@ static void remap_ivt_to_tcm(void)
     memcpy(&_itcm_start, &_itcm_at_start, (int)(&_itcm_size));
     
     __enable_irq();
+    early_pr_info("vector: remap vector table to tcm ram");
 }
 
 /**
@@ -58,11 +59,14 @@ static void kernel_entry()
 }
 
 int main(void) {
-    // init i/dcache
-    // config system clock
+    ////remap_ivt_to_tcm();
+    // mpu setup
     mpu_config();
     SCB_EnableICache();
     SCB_EnableDCache();
+    early_pr_info("cache: icache and dcache enabled");
+
+    // config system clock
     HAL_Init();
     sysclk_config();
 

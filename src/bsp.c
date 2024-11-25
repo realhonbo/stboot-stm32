@@ -33,16 +33,18 @@ void mpu_config(void)
         mpu_init.TypeExtField = MPU_TEX_LEVEL1;
         mpu_init.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
         HAL_MPU_ConfigRegion(&mpu_init);
-/* SRAM_D2 */
+#ifdef USE_SRAM_D2 /* SRAM_D2 */
         mpu_init.BaseAddress = 0x30000000;
         mpu_init.Size = MPU_REGION_SIZE_256KB;
         mpu_init.Number = MPU_REGION_NUMBER1;
         HAL_MPU_ConfigRegion(&mpu_init);
-/* SRAM_D3 */
+#endif
+#ifdef USE_SRAM_D3 /* SRAM_D3 */
         mpu_init.BaseAddress = 0x38000000;
         mpu_init.Size = MPU_REGION_SIZE_64KB;
         mpu_init.Number = MPU_REGION_NUMBER2;
         HAL_MPU_ConfigRegion(&mpu_init);
+#endif
 /* SDRAM */
         mpu_init.BaseAddress = SDRAM_BASE_ADDR;
         mpu_init.Size = MPU_REGION_SIZE_16MB;
@@ -59,6 +61,8 @@ void mpu_config(void)
         mpu_init.Number = MPU_REGION_NUMBER5;
         HAL_MPU_ConfigRegion(&mpu_init);
         HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
+
+        early_pr_info("mpu: mpu region setup success");
 }
 
 
@@ -129,7 +133,10 @@ void sysclk_config(void)
         __HAL_RCC_SYSCFG_CLK_ENABLE();
         HAL_EnableCompensationCell();
 /* D2、D3域的SRAM需要单独使能 */
+#if defined(USE_SRAM_D2) || defined(USE_SRAM_D3)
         __HAL_RCC_D2SRAM1_CLK_ENABLE();
+#endif
+        early_pr_info("sysclk: system clock configured");
 }
 
 /**

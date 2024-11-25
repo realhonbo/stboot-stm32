@@ -1,9 +1,17 @@
 #ifndef BSP_EASYCONFIG_H
 #define BSP_EASYCONFIG_H
 
+
 /*
-* * hardware configs
+ * early print config
  */
+#define EPB_SIZE                512
+
+/*
+ * hardware configs
+ */
+// USE_SRAM_D2 is not set
+// USE_SRAM_D3 is not set
 #define SDRAM_BASE_ADDR         0xC0000000
 #define SDRAM_SIZE_MB           32
 #define FLASH_BASE_ADDR         0x08000000
@@ -32,5 +40,6 @@ void uart1_tty_init(void);
 void Error_Handler(char *file, int line);
 void error_print(void);
 void pr_info(const char *fmt, ...);
+void early_pr_info(const char *early_fmt);
 
 #endif
