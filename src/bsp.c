@@ -137,7 +137,7 @@ void sysclk_config(void)
  */
 void Error_Handler(char *file, int line)
 {
-        printf("[Error] file: %s, line: %d\r\n", file, line);
+        pr_info("Error: file: %s, line: %d", file, line);
 }
 
 

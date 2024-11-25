@@ -9,6 +9,7 @@
  */
 #include <stm32h7xx_hal.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include "bsp.h"
 
 static UART_HandleTypeDef tty;
@@ -17,6 +18,20 @@ int __io_putchar(int ch)
 {
     HAL_UART_Transmit(&tty, (uint8_t *)&ch, 1, 100);
     return ch;
+}
+
+void pr_info(const char *fmt, ...)
+{
+    float ts = HAL_GetTick() * 0.001;
+
+    printf("[%12.6f] ", ts);
+
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+
+    printf("\r\n");
 }
 
 void uart1_tty_init(void)
@@ -46,7 +61,7 @@ void uart1_tty_init(void)
     printf("/_____/   |_|   |_____/ \\_____/ \\_____/   |_|   \r\n");
     printf("\r\n");
 
-    printf("[ tty ]: uart1 init success \r\n");
+    pr_info("tty: uart1 init success");
 }
 
 void HAL_UART_MspInit(UART_HandleTypeDef *uartHandle)

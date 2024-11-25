@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include "qspi_flash.h"
 #include "stm32h7xx_hal.h"
+#include "bsp.h"
 
 QSPI_HandleTypeDef hqspi;	// 定义QSPI句柄，这里保留使用cubeMX生成的变量命名，方便用户参考和移植
 
@@ -156,10 +157,10 @@ int8_t QSPI_W25Qxx_Init(void)
 	
 	if( Device_ID == W25Qxx_FLASH_ID )
 	{
-		printf("[ flash ]: w25q64 flash ( ID:%X ) init success\r\n", Device_ID);
+		pr_info("flash: w25q64 flash ( ID:%X ) init success", Device_ID);
 		return QSPI_W25Qxx_OK;
 	} else {
-		printf("[ flash ]: w25q64 flash ( ID:%X ) init failed\r\n", Device_ID);
+		pr_info("flash: w25q64 flash ( ID:%X ) init failed", Device_ID);
 		return W25Qxx_ERROR_INIT;
 	}	
 }

@@ -94,14 +94,14 @@
      ___| |   | |   | |_| | | |_| | | |_| |   | |     
     /_____/   |_|   |_____/ \_____/ \_____/   |_|   
     
-    [ tty ]: uart1 init success 
-    [ led ]: led enabled 
-    [ flash ]: w25q64 flash ( ID:EF4017 ) init success
-    [ sdram ]: sdram init success 
-    [ bootargs ]: kernel addr: 0x90010000, fdt addr: 0x90000000
-    
-    [ boot ]: st-boot took 46ms, ready to boot kernel... 
-    
+    [    0.027000] tty: uart1 init success
+    [    0.030000] led: led enabled
+    [    0.033000] flash: w25q64 flash ( ID:EF4017 ) init success
+    [    0.040000] sdram: sdram init success
+    [    0.043000] bootargs: kernel addr: 0x90010000, fdt addr: 0x90000000
+    [    0.049000] 
+    [    0.051000] boot: ready to boot kernel...
+    [    0.055000]
     [    0.000000] Booting Linux on physical CPU 0x0
     [    0.000000] Linux version 6.11.0-g29002a45fd6e-dirty (boboo@Linux01) (arm-none-eabi-gcc (15:13.2.rel1-2) 13.2.1 20231009, GNU ld (2.42-1ubuntu1+23) 2.42) #48 Mon Nov 18 19:26:44 CST 2024
     [    0.000000] CPU: ARMv7-M [411fc271] revision 1 (ARMv7M), cr=00000000

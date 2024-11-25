@@ -9,6 +9,7 @@
  */
 #include <stm32h7xx_hal.h>
 #include <stdio.h>
+#include "bsp.h"
 
 SDRAM_HandleTypeDef      hsdram1;
 
@@ -158,6 +159,6 @@ void sdram_init(void)
         sdram_send_command(&hsdram1);
         HAL_SDRAM_ProgramRefreshRate(&hsdram1, 918);
 
-        printf("[ sdram ]: sdram init success \r\n");
+        pr_info("sdram: sdram init success");
 }
 

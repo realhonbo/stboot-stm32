@@ -8,6 +8,7 @@
  * 
  */
 #include <stdio.h>
+#include "bsp.h"
 
 void error_print(void)
 {
@@ -24,6 +25,6 @@ void error_print(void)
     ::"memory","cc"
     );
 
-    printf("[ Error ] Unhandled exception: IPSR = 0x%08x LR = 0x%08x CFSR = 0x%08x HFSR = 0x%08x\n", 
+    pr_info("Error: Unhandled exception: IPSR = 0x%08x LR = 0x%08x CFSR = 0x%08x HFSR = 0x%08x",
             ipsr, lr, cfsr, hfsr);
 }

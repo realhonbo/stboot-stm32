@@ -39,10 +39,10 @@ static void remap_ivt_to_tcm(void)
  */
 static void kernel_entry()
 {
-    printf("[ bootargs ]: kernel addr: 0x%x, fdt addr: 0x%x\r\n", KERNEL_ADDR, FDT_ADDR);
-    printf("\r\n");
-    printf("[ boot ]: st-boot took %dms, ready to boot kernel... \r\n", HAL_GetTick());
-    printf("\r\n");
+    pr_info("bootargs: kernel addr: 0x%x, fdt addr: 0x%x", KERNEL_ADDR, FDT_ADDR);
+    pr_info("");
+    pr_info("boot: ready to boot kernel...");
+    pr_info("");
     // dcache should be closed before kernel init
     SCB_DisableDCache();
     asm volatile ( "ldr r0, [%0]\n"

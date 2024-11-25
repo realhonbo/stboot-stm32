@@ -27,7 +27,7 @@ void led_init(void)
         HAL_GPIO_Init(GPIOC, &gpio_cfg);
         HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, 1);
 
-        printf("[ led ]: led enabled \r\n");
+        pr_info("led: led enabled");
 
         stick = HAL_GetTick();
 }
