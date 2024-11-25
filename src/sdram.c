@@ -155,10 +155,14 @@ void sdram_init(void)
         timing.RCDDelay             = 2; // 20ns, TRCD定义激活命令与读/写命令之间的延迟
 /* 初始化FMC接口
  * 配置命令和刷新率
- */     HAL_SDRAM_Init(&hsdram1, &timing);
-        sdram_send_command(&hsdram1);
-        HAL_SDRAM_ProgramRefreshRate(&hsdram1, 918);
+ */     if (HAL_SDRAM_Init(&hsdram1, &timing))
+            pr_info("sdram: init failed");
 
-        pr_info("sdram: sdram init success");
+        sdram_send_command(&hsdram1);
+
+        if (HAL_SDRAM_ProgramRefreshRate(&hsdram1, 918))
+            pr_info("sdram: chuck in set refresh rate");
+
+        pr_info("sdram: configure success");
 }
 

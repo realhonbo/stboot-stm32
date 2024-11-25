@@ -23,7 +23,7 @@ static void remap_ivt_to_tcm(void)
     memcpy(&_itcm_start, &_itcm_at_start, (int)(&_itcm_size));
     
     __enable_irq();
-    early_pr_info("vector: remap vector table to tcm ram");
+    early_pr_info("vector: remap vectors to DTCM 0x%08x", &_isr_start);
 }
 
 /**
@@ -42,7 +42,7 @@ static void kernel_entry()
 {
     pr_info("bootargs: kernel addr: 0x%x, fdt addr: 0x%x", KERNEL_ADDR, FDT_ADDR);
     pr_info("");
-    pr_info("boot: ready to boot kernel...");
+    pr_info("boot: ready to boot kernel ...");
     pr_info("");
     // dcache should be closed before kernel init
     SCB_DisableDCache();
@@ -64,7 +64,6 @@ int main(void) {
     mpu_config();
     SCB_EnableICache();
     SCB_EnableDCache();
-    early_pr_info("cache: icache and dcache enabled");
 
     // config system clock
     HAL_Init();

@@ -33,36 +33,40 @@ void mpu_config(void)
         mpu_init.TypeExtField = MPU_TEX_LEVEL1;
         mpu_init.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
         HAL_MPU_ConfigRegion(&mpu_init);
+        early_pr_info("mpu: mem 0x%08x setup, size 512KB", mpu_init.BaseAddress);
 #ifdef USE_SRAM_D2 /* SRAM_D2 */
         mpu_init.BaseAddress = 0x30000000;
         mpu_init.Size = MPU_REGION_SIZE_256KB;
         mpu_init.Number = MPU_REGION_NUMBER1;
         HAL_MPU_ConfigRegion(&mpu_init);
+        early_pr_info("mpu: mem 0x%08x setup, size 256KB", mpu_init.BaseAddress);
 #endif
 #ifdef USE_SRAM_D3 /* SRAM_D3 */
         mpu_init.BaseAddress = 0x38000000;
         mpu_init.Size = MPU_REGION_SIZE_64KB;
         mpu_init.Number = MPU_REGION_NUMBER2;
         HAL_MPU_ConfigRegion(&mpu_init);
+        early_pr_info("mpu: mem 0x%08x setup, size 64KB", mpu_init.BaseAddress);
 #endif
 /* SDRAM */
         mpu_init.BaseAddress = SDRAM_BASE_ADDR;
-        mpu_init.Size = MPU_REGION_SIZE_16MB;
+        mpu_init.Size = MPU_REGION_SIZE_32MB;
         mpu_init.Number = MPU_REGION_NUMBER3;
         HAL_MPU_ConfigRegion(&mpu_init);
+        early_pr_info("mpu: mem 0x%08x setup, size 32MB", mpu_init.BaseAddress);
 /* FLASH */
         mpu_init.BaseAddress = FLASH_BASE_ADDR;
         mpu_init.Size = MPU_REGION_SIZE_2MB;
         mpu_init.Number = MPU_REGION_NUMBER4;
         HAL_MPU_ConfigRegion(&mpu_init);
+        early_pr_info("mpu: mem 0x%08x setup, size 2MB", mpu_init.BaseAddress);
 /* QSPI FLASH */
         mpu_init.BaseAddress = QSPI_FLASH_BASE_ADDR;
         mpu_init.Size = MPU_REGION_SIZE_8MB;
         mpu_init.Number = MPU_REGION_NUMBER5;
         HAL_MPU_ConfigRegion(&mpu_init);
         HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
-
-        early_pr_info("mpu: mpu region setup success");
+        early_pr_info("mpu: mem 0x%08x setup, size 8MB", mpu_init.BaseAddress);
 }
 
 
@@ -87,6 +91,7 @@ void mpu_config(void)
  */
 void sysclk_config(void)
 {
+        int fcpu;
         RCC_OscInitTypeDef RCC_OscInitStruct = {0};
         RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
@@ -101,16 +106,16 @@ void sysclk_config(void)
         RCC_OscInitStruct.HSEState       = RCC_HSE_ON;
         RCC_OscInitStruct.PLL.PLLState   = RCC_PLL_ON;
         RCC_OscInitStruct.PLL.PLLSource  = RCC_PLLSOURCE_HSE;
-        RCC_OscInitStruct.PLL.PLLM       = 5;
-        RCC_OscInitStruct.PLL.PLLN       = 192;
-        RCC_OscInitStruct.PLL.PLLP       = 2;
+        RCC_OscInitStruct.PLL.PLLM       = SYSCLK_PLL_M;
+        RCC_OscInitStruct.PLL.PLLN       = SYSCLK_PLL_N;
+        RCC_OscInitStruct.PLL.PLLP       = SYSCLK_PLL_P;
         RCC_OscInitStruct.PLL.PLLQ       = 2;
         RCC_OscInitStruct.PLL.PLLR       = 2;
         RCC_OscInitStruct.PLL.PLLRGE     = RCC_PLL1VCIRANGE_2;
         RCC_OscInitStruct.PLL.PLLVCOSEL  = RCC_PLL1VCOWIDE;
         RCC_OscInitStruct.PLL.PLLFRACN   = 0;
         if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-                Error_Handler(__FILE__, __LINE__);
+                early_pr_info("Error: file: %s, line: %d", __FILE__, __LINE__);
         }
 /* 初始化CPU | AHB | APB总线时钟 */
         RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 |
@@ -123,7 +128,7 @@ void sysclk_config(void)
         RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
         RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV2;
         if(HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK) {
-                Error_Handler(__FILE__, __LINE__);
+                early_pr_info("Error: file: %s, line: %d", __FILE__, __LINE__);
         }
 /* 使用IO高速模式, 要使能IO补偿
  * 1. 使能CSI clock
@@ -136,7 +141,8 @@ void sysclk_config(void)
 #if defined(USE_SRAM_D2) || defined(USE_SRAM_D3)
         __HAL_RCC_D2SRAM1_CLK_ENABLE();
 #endif
-        early_pr_info("sysclk: system clock configured");
+        fcpu = HSE_FREQUENCY * SYSCLK_PLL_N / SYSCLK_PLL_M / SYSCLK_PLL_P;
+        early_pr_info("sysclk: system clock configured, CPU %dMHz", fcpu);
 }
 
 /**

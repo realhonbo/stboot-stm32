@@ -1,12 +1,16 @@
 #ifndef BSP_EASYCONFIG_H
 #define BSP_EASYCONFIG_H
 
+#define HSE_FREQUENCY          25
+#define SYSCLK_PLL_N           192
+#define SYSCLK_PLL_M           5
+#define SYSCLK_PLL_P           2
 
 /*
- * early print config
+ * early print buffer config
  */
-#define EPB_SIZE                512
-
+#define EPB_BUF_SIZE           512
+#define EPB_TMP_SIZE           128
 /*
  * hardware configs
  */
@@ -37,9 +41,9 @@ void sdram_init(void);
 void led_init(void);
 void led_timer_handler(void);
 void uart1_tty_init(void);
-void Error_Handler(char *file, int line);
+void Error_Handler(char *, int);
 void error_print(void);
-void pr_info(const char *fmt, ...);
-void early_pr_info(const char *early_fmt);
+void pr_info(const char *, ...);
+void early_pr_info(const char *, ...);
 
 #endif

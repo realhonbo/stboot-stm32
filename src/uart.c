@@ -15,23 +15,30 @@
 
 static UART_HandleTypeDef tty;
 
-static char epb_buffer[EPB_SIZE];
+static char epb_buffer[EPB_BUF_SIZE];
 static int  epb_ptr, n_ebpstr;
 
 /*
  * early message before tty init
  */
-void early_pr_info(const char *early_fmt)
+void early_pr_info(const char *fmt, ...)
 {
-    for(int i = 0; i < strlen(early_fmt); i++)
-        epb_buffer[epb_ptr++] = early_fmt[i];
+    char buffer[EPB_TMP_SIZE];
+    va_list args;
+    
+    va_start(args, fmt);
+    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    va_end(args);
+
+    for(int i = 0; i < strlen(buffer); i++)
+        epb_buffer[epb_ptr++] = buffer[i];
     epb_buffer[epb_ptr++] = '\0';
     n_ebpstr++;
 }
 
 static void flush_early_info(void)
 {
-    char string[128];
+    char string[EPB_TMP_SIZE];
     int i, p = 0;
 
     for (int n = 0; n < n_ebpstr; n++) {
@@ -68,7 +75,6 @@ void pr_info(const char *fmt, ...)
 
     printf("\r\n");
 }
-
 
 /*
  * uart config
