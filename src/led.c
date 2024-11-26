@@ -1,7 +1,7 @@
 /**
  * @file led.c
  * @author Honbo (hehongbo918@gmail.com)
- * @brief blink `LED_BLINK_TIMES` times when stboot start
+ * @brief LED_BLINK_TIME: led blink period when stboot start
  * @version 1.0
  * 
  * @copyright Copyright (c) 2024
@@ -34,10 +34,8 @@ void led_init(void)
 
 void led_timer_handler(void)
 {
-        int etick = HAL_GetTick();
-
-        if (etick - stick > LED_BLINK_TIME) {
+        if (HAL_GetTick() - stick > LED_BLINK_TIME) {
                 HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-                stick = etick;
+                stick = HAL_GetTick();
         }
 }

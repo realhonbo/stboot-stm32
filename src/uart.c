@@ -11,50 +11,50 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <cmsis_gcc.h>
+#include <stdlib.h>
 #include "bsp.h"
 
 static UART_HandleTypeDef tty;
 
 static char epb_buffer[EPB_BUF_SIZE];
-static int  epb_ptr, n_ebpstr;
 
 /*
  * early message before tty init
  */
 void early_pr_info(const char *fmt, ...)
 {
-    char buffer[EPB_TMP_SIZE];
+    char *buf;
+    static int epb_ptr;
     va_list args;
     
     va_start(args, fmt);
-    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    vasiprintf(&buf, fmt, args);
     va_end(args);
 
-    for(int i = 0; i < strlen(buffer); i++)
-        epb_buffer[epb_ptr++] = buffer[i];
+    for(int i = 0; i < strlen(buf); i++)
+        epb_buffer[epb_ptr++] = buf[i];
     epb_buffer[epb_ptr++] = '\0';
-    n_ebpstr++;
+
+    free(buf);
 }
 
-static void flush_early_info(void)
+static void flush_epb(void)
 {
-    char string[EPB_TMP_SIZE];
-    int i, p = 0;
+    int i = 0;
+    char *buf;
 
-    for (int n = 0; n < n_ebpstr; n++) {
-        i = 0;
-        while (epb_buffer[p] != '\0') {
-            string[i] = epb_buffer[p++];
-            i++;
-        }
-        pr_info("%s", string);
-        memset(string, '\0', sizeof(string));
-        p += 1; // jmp '\0'
+    while (epb_buffer[i]) {
+        buf = &epb_buffer[i];
+        pr_info("%s", buf);
+        // jump over '\0'
+        i += strlen(buf) + 1;
     }
 }
 
 /*
  * print info
+ * gcc will inline __current
  */
 int __io_putchar(int ch)
 {
@@ -62,11 +62,23 @@ int __io_putchar(int ch)
     return ch;
 }
 
+static float __current(void)
+{
+    int load, val;
+    float us, ms;
+
+    load = SysTick->LOAD;
+    val  = SysTick->VAL;
+
+    us = (float)(load - val) / load * 0.001;
+    ms = HAL_GetTick() * 0.001;
+
+    return ms + us;
+}
+
 void pr_info(const char *fmt, ...)
 {
-    float ts = HAL_GetTick() * 0.001;
-
-    printf("[%12.6f] ", ts);
+    printf("[%12.6f] ", __current());
 
     va_list args;
     va_start(args, fmt);
@@ -77,7 +89,7 @@ void pr_info(const char *fmt, ...)
 }
 
 /*
- * uart config
+ * uart hardware config
  */
 void uart1_tty_init(void)
 {
@@ -88,25 +100,20 @@ void uart1_tty_init(void)
     tty.Init.Parity = UART_PARITY_NONE;
     tty.Init.Mode   = UART_MODE_TX_RX;
     tty.Init.HwFlowCtl      = UART_HWCONTROL_NONE;
-    tty.Init.OverSampling   = UART_OVERSAMPLING_16;
-    tty.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-    tty.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-    tty.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
     HAL_UART_Init(&tty);
     HAL_UARTEx_SetTxFifoThreshold(&tty, UART_TXFIFO_THRESHOLD_1_8);
     HAL_UARTEx_SetRxFifoThreshold(&tty, UART_RXFIFO_THRESHOLD_1_8);
     HAL_UARTEx_DisableFifoMode(&tty);
 
     printf("\r\n");
-    printf(" _____   _____   _____   _____   _____   _____    \r\n");
-    printf("/  ___/ |_   _| |  _  \\ /  _  \\ /  _  \\ |_   _|\r\n");
-    printf("| |___    | |   | |_| | | | | | | | | |   | |     \r\n");
-    printf("\\___  \\   | |   |  _  | | | | | | | | |   | |   \r\n");
-    printf(" ___| |   | |   | |_| | | |_| | | |_| |   | |     \r\n");
-    printf("/_____/   |_|   |_____/ \\_____/ \\_____/   |_|   \r\n");
+    printf("██████ ████████ ██████  ███████ ███████ ████████\r\n");
+    printf("██        ██    ██   ██ ██   ██ ██   ██    ██   \r\n");
+    printf("██████    ██    ██████  ██   ██ ██   ██    ██   \r\n");
+    printf("    ██    ██    ██   ██ ██   ██ ██   ██    ██   \r\n");
+    printf("██████    ██    ██████  ███████ ███████    ██   \r\n");
     printf("\r\n");
 
-    flush_early_info();
+    flush_epb();
     pr_info("tty: uart1 init success");
 }
 

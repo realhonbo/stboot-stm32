@@ -10,7 +10,7 @@
  * early print buffer config
  */
 #define EPB_BUF_SIZE           512
-#define EPB_TMP_SIZE           128
+
 /*
  * hardware configs
  */
@@ -30,7 +30,7 @@
 #define KERNEL_ADDR            (QSPI_FLASH_BASE_ADDR + FDT_SIZE)
 
 #define UART_Baudrate           115200
-#define LED_BLINK_TIME          10
+#define LED_BLINK_TIME          50
 
 
 

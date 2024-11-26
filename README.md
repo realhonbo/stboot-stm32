@@ -1,18 +1,17 @@
 <p align="center">
   <a>
-    <img src=".vscode/pic/boot.png" alt="Logo" width="580" height="280">
+    <img src=".vscode/.pic/stboot_v1.7.png" alt="Logo" width="643" height="402">
   </a>
 </p>
 
-<h1 align="center"> STBoot </h1>
 
-> stm32 easy bootloader for linux, base on hal-library
-- 支持的硬件设备
+
+> stm32 bootloader for linux, base on HAL library, easy for you to customize functions
+- 当前支持的硬件设备
 
   - **STM32H7**-FK（反客科技）
-
     - `MCU`   *STM32H743*   *STM32H750*
-
+    
     - `SDRAM`   *W9825G6KH-6I*
     - `QSPI-Flash`   *W25Q64*
 
@@ -24,7 +23,7 @@
 
     > Ubuntu 中使用 *arm-none-eabi-gcc* 交叉编译 kernel 和 buildroot
     >
-    > 请使用 *arm-none-eabi-gcc-11* 及以上版本，否则内核有可能无法识别 Cortex-M7 的 cpuid
+    > 请使用 *arm-none-eabi-gcc-10.3.1* 及以上版本，否则内核有可能无法识别 Cortex-M7 的 cpuid
     
   - **Windows 11**（可选）
 
@@ -53,12 +52,12 @@
 
 
 - 简单配置
-  - `EPB_SIZE`：early print 缓冲区大小（default to 512B ）
+  - `EPB_BUF_SIZE`：early print 缓冲区大小（default to 512B ）
   - `USE_SRAM_D2` `USE_SRAM_D3`：是否使用 288KB + 64KB 的 D2 D3 域 SRAM
   - `FDT_ADDR` `FDT_SIZE`：设备树基地址 和 容量大小（default 64KB，a Flash Block）
   - `KERNEL_ADDR`：内核基地址 = `FDT_ADDR` + `FDT_SIZE`
-  - `UART_Baudrate`：串口波特率（default **115200**）
-  - `LED_BLINK_TIME`：stboot 启动闪烁间隔（default **10ms**）
+  - `UART_Baudrate`：串口波特率（default **115200** bps）
+  - `LED_BLINK_TIME`：stboot 启动闪烁间隔（default **50ms**）
 
 
 
@@ -88,32 +87,31 @@
   
   - 烧录完成并复位后，stboot 与内核的启动信息如下
   
-    ```bash
-     _____   _____   _____   _____   _____   _____    
-    /  ___/ |_   _| |  _  \ /  _  \ /  _  \ |_   _|
-    | |___    | |   | |_| | | | | | | | | |   | |     
-    \___  \   | |   |  _  | | | | | | | | |   | |   
-     ___| |   | |   | |_| | | |_| | | |_| |   | |     
-    /_____/   |_|   |_____/ \_____/ \_____/   |_|   
+    ```shell
+    ██████ ████████ ██████  ███████ ███████ ████████
+    ██        ██    ██   ██ ██   ██ ██   ██    ██   
+    ██████    ██    ██████  ██   ██ ██   ██    ██   
+        ██    ██    ██   ██ ██   ██ ██   ██    ██   
+    ██████    ██    ██████  ███████ ███████    ██   
     
-    [    0.027000] mpu: mpu region setup success
-    [    0.031000] cache: icache and dcache enabled
-    [    0.035000] sysclk: system clock configured
-    [    0.039000] tty: uart1 init success
-    [    0.043000] led: led enabled
-    [    0.045000] flash: w25q64 flash ( ID:EF4017 ) init success
-    [    0.053000] sdram: sdram init success
-    [    0.056000] bootargs: kernel addr: 0x90010000, fdt addr: 0x90000000
-    [    0.062000] 
-    [    0.064000] boot: ready to boot kernel...
-    [    0.068000]
+    [    0.045271] mpu: mem 0x24000000 setup, size 512KB
+    [    0.050001] mpu: mem 0xc0000000 setup, size 32MB
+    [    0.054637] mpu: mem 0x08000000 setup, size 2MB
+    [    0.059187] mpu: mem 0x90000000 setup, size 8MB
+    [    0.063735] sysclk: system clock configured, CPU 480MHz
+    [    0.068980] tty: uart1 init success
+    [    0.072484] led: gpioc-13 as triggered led
+    [    0.076606] flash: w25q64 flash ( ID:EF4017 ) init success
+    [    0.084001] sdram: configure success
+    [    0.087592] bootargs: kernel addr: 0x90010000, fdt addr: 0x90000000
+    [    0.093888] 
+    [    0.095385] boot: ready to boot kernel ...
+    [    0.099498]
     [    0.000000] Booting Linux on physical CPU 0x0
-    [    0.000000] Linux version 6.11.0-g29002a45fd6e-dirty (boboo@Linux01) (arm-none-eabi-gcc (15:13.2.rel1-2) 13.2.1 20231009, GNU ld (2.42-1ubuntu1+23) 2.42) #48 Mon Nov 18 19:26:44 CST 2024
+    [    0.000000] Linux version 6.12.0 (boboo@Linux01) (arm-none-eabi-gcc (15:10.3-2021.07-4) 10.3.1 20210621 (release), GNU ld (2.38-3ubuntu1+15build1) 2.38) #3 Sun Nov 24 20:40:54 CST 2024
     [    0.000000] CPU: ARMv7-M [411fc271] revision 1 (ARMv7M), cr=00000000
     [    0.000000] CPU: PIPT / VIPT nonaliasing data cache, PIPT instruction cache
     [    0.000000] OF: fdt: Machine model: STMicroelectronics STM32H743i-FK (反客科技)
-    [    0.000000] OF: fdt: Ignoring memory block 0x24000000 - 0x24080000
-    [    0.000000] OF: fdt: Ignoring memory block 0x30000000 - 0x30040000
     [    0.000000] printk: legacy bootconsole [earlycon0] enabled
     [    0.000000] printk: debug: ignoring loglevel setting.
     [    0.000000] Zone ranges:
@@ -128,7 +126,8 @@
     [    0.000000] Dentry cache hash table entries: 4096 (order: 2, 16384 bytes, linear)
     [    0.000000] Inode-cache hash table entries: 2048 (order: 1, 8192 bytes, linear)
     [    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 8192
-    [    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+    [    0.000000] allocated 32768 bytes of page_ext
+    [    0.000000] mem auto-init: stack:off, heap alloc:off, heap free:off
     [    0.000000] SLUB: HWalign=32, Order=0-1, MinObjects=0, CPUs=1, Nodes=1
     [    0.000000] Invalid parameters for execmem allocator, module loading will fail
     [    0.000000] NR_IRQS: 16, nr_irqs: 16, preallocated irqs: 16
@@ -137,46 +136,47 @@
     [    0.000000] /soc/interrupt-controller@58000000: bank2
     [    0.000000] clocksource: arm_system_timer: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 29863442 ns
     [    0.000000] ARM System timer initialized as clocksource
-    [    0.000054] sched_clock: 32 bits at 120MHz, resolution 8ns, wraps every 17895697403ns
-    [    0.016220] timer@40000c00: STM32 sched_clock registered
-    [    0.027057] Switching to timer-based delay loop, resolution 8ns
-    [    0.039041] timer@40000c00: STM32 delay timer registered
-    [    0.049847] clocksource: timer@40000c00: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 15927170388 ns
-    [    0.070055] /soc/timer@40000c00: STM32 clockevent driver initialized (32 bits)
-    [    0.087391] Calibrating delay loop (skipped), value calculated using timer frequency.. 240.00 BogoMIPS (lpj=1200000)
-    [    0.109318] pid_max: default: 4096 minimum: 301
-    [    0.119456] Mount-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
-    [    0.134843] Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
-    [    0.175403] Memory: 31716K/32768K available (1999K kernel code, 272K rwdata, 952K rodata, 67K init, 102K bss, 768K reserved, 0K cma-reserved)
-    [    0.208324] devtmpfs: initialized
-    [    0.279967] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604462750000 ns
-    [    0.301113] pinctrl core: initialized pinctrl subsystem
-    [    0.425591] stm32h743-pinctrl soc:pinctrl@58020000: GPIOA bank added
-    [    0.445742] stm32h743-pinctrl soc:pinctrl@58020000: GPIOB bank added
-    [    0.466654] stm32h743-pinctrl soc:pinctrl@58020000: GPIOC bank added
-    [    0.487421] stm32h743-pinctrl soc:pinctrl@58020000: GPIOD bank added
-    [    0.507897] stm32h743-pinctrl soc:pinctrl@58020000: GPIOE bank added
-    [    0.528802] stm32h743-pinctrl soc:pinctrl@58020000: GPIOF bank added
-    [    0.549881] stm32h743-pinctrl soc:pinctrl@58020000: GPIOG bank added
-    [    0.570891] stm32h743-pinctrl soc:pinctrl@58020000: GPIOH bank added
-    [    0.592144] stm32h743-pinctrl soc:pinctrl@58020000: GPIOI bank added
-    [    0.613519] stm32h743-pinctrl soc:pinctrl@58020000: GPIOJ bank added
-    [    0.634275] stm32h743-pinctrl soc:pinctrl@58020000: GPIOK bank added
-    [    0.648123] stm32h743-pinctrl soc:pinctrl@58020000: Pinctrl STM32 initialized
-    [    0.719641] stm32-mdma 52000000.dma-controller: STM32 MDMA driver registered
-    [    0.756060] clocksource: Switched to clocksource timer@40000c00
-    [    0.811972] workingset: timestamp_bits=30 max_order=13 bucket_order=0
-    [    0.829716] io scheduler mq-deadline registered
-    [    0.839876] io scheduler kyber registered
-    [    0.848859] io scheduler bfq registered
-    [    0.869737] STM32 USART driver initialized
-    [    0.884936] stm32-usart 40011000.serial: interrupt mode for rx (no dma)
-    [    0.899307] stm32-usart 40011000.serial: interrupt mode for tx (no dma)
-    [    0.918994] 40011000.serial: ttySTM0 at MMIO 0x40011000 (irq = 31, base_baud = 7500000) is a stm32-usart
-    [    0.939468] printk: legacy console [ttySTM0] enabled
-    [    0.939468] printk: legacy console [ttySTM0] enabled
-    [    0.959911] printk: legacy bootconsole [earlycon0] disabled
-    [    0.959911] printk: legacy bootconsole [earlycon0] disabled
+    [    0.000088] sched_clock: 32 bits at 120MHz, resolution 8ns, wraps every 17895697403ns
+    [    0.016276] timer@40000c00: STM32 sched_clock registered
+    [    0.027135] Switching to timer-based delay loop, resolution 8ns
+    [    0.039145] timer@40000c00: STM32 delay timer registered
+    [    0.050010] clocksource: timer@40000c00: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 15927170388 ns
+    [    0.070274] /soc/timer@40000c00: STM32 clockevent driver initialized (32 bits)
+    [    0.088137] Calibrating delay loop (skipped), value calculated using timer frequency.. 240.00 BogoMIPS (lpj=1200000)
+    [    0.110137] pid_max: default: 4096 minimum: 301
+    [    0.120543] Mount-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+    [    0.136092] Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+    [    0.189070] Memory: 31564K/32768K available (2273K kernel code, 337K rwdata, 1100K rodata, 76K init, 110K bss, 904K reserved, 0K cma-reserved)
+    [    0.223762] devtmpfs: initialized
+    [    0.285465] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604462750000 ns
+    [    0.306914] pinctrl core: initialized pinctrl subsystem
+    [    0.344734] cpuidle: using governor menu
+    [    0.445956] stm32h743-pinctrl soc:pinctrl@58020000: GPIOA bank added
+    [    0.467191] stm32h743-pinctrl soc:pinctrl@58020000: GPIOB bank added
+    [    0.488693] stm32h743-pinctrl soc:pinctrl@58020000: GPIOC bank added
+    [    0.509742] stm32h743-pinctrl soc:pinctrl@58020000: GPIOD bank added
+    [    0.531267] stm32h743-pinctrl soc:pinctrl@58020000: GPIOE bank added
+    [    0.553037] stm32h743-pinctrl soc:pinctrl@58020000: GPIOF bank added
+    [    0.575071] stm32h743-pinctrl soc:pinctrl@58020000: GPIOG bank added
+    [    0.596886] stm32h743-pinctrl soc:pinctrl@58020000: GPIOH bank added
+    [    0.618994] stm32h743-pinctrl soc:pinctrl@58020000: GPIOI bank added
+    [    0.641154] stm32h743-pinctrl soc:pinctrl@58020000: GPIOJ bank added
+    [    0.662691] stm32h743-pinctrl soc:pinctrl@58020000: GPIOK bank added
+    [    0.676777] stm32h743-pinctrl soc:pinctrl@58020000: Pinctrl STM32 initialized
+    [    0.751159] stm32-mdma 52000000.dma-controller: STM32 MDMA driver registered
+    [    0.790488] clocksource: Switched to clocksource timer@40000c00
+    [    0.855956] workingset: timestamp_bits=30 max_order=13 bucket_order=0
+    [    0.875491] io scheduler mq-deadline registered
+    [    0.885798] io scheduler kyber registered
+    [    0.894981] io scheduler bfq registered
+    [    0.942800] STM32 USART driver initialized
+    [    0.958934] stm32-usart 40011000.serial: interrupt mode for rx (no dma)
+    [    0.973415] stm32-usart 40011000.serial: interrupt mode for tx (no dma)
+    [    0.993813] 40011000.serial: ttySTM0 at MMIO 0x40011000 (irq = 31, base_baud = 7500000) is a stm32-usart
+    [    1.014549] printk: legacy console [ttySTM0] enabled
+    [    1.014549] printk: legacy console [ttySTM0] enabled
+    [    1.035169] printk: legacy bootconsole [earlycon0] disabled
+    [    1.035169] printk: legacy bootconsole [earlycon0] disabled
     [    1.009824] brd: module loaded
     [    2.092657] mmci-pl18x 52007000.mmc: mmc0: PL180 manf 53 rev1 at 0x52007000 irq 32,0 (pio)
     [    2.112770] clk: Disabling unused clocks

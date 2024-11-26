@@ -14,7 +14,6 @@
 #include <cmsis_gcc.h>
 #include "bsp.h"
 #include "qspi_flash.h"
-#include "setup.h"
 
 #define RW_SIZE         0x400000    // 测试数据量: Byte
 #define CaculateSpeed   (RW_SIZE / 1000 / (end_time - start_time))

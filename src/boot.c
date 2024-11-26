@@ -4,9 +4,8 @@
 #include <cmsis_gcc.h>
 #include "bsp.h"
 #include "qspi_flash.h"
-#include "setup.h"
 
-////static struct tag *params;
+
 /*
  * move vector_table from flash to DTCM
  * and fast instructions to ITCM
@@ -21,7 +20,7 @@ static void remap_ivt_to_tcm(void)
     memcpy(&_isr_start, (int *)FLASH_BASE_ADDR, (int)(&_isr_size));
     SCB->VTOR = (int)&_isr_start;
     memcpy(&_itcm_start, &_itcm_at_start, (int)(&_itcm_size));
-    
+
     __enable_irq();
     early_pr_info("vector: remap vectors to DTCM 0x%08x", &_isr_start);
 }
@@ -72,7 +71,7 @@ int main(void) {
     // init tty and led
     uart1_tty_init();
     led_init();
-    
+
     // set nor_flash and sdram
     QSPI_W25Qxx_Init();
     QSPI_W25Qxx_MMMode();
