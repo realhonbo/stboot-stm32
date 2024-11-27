@@ -39,7 +39,7 @@ static void remap_ivt_to_tcm(void)
  */
 static void kernel_entry()
 {
-    pr_info("bootargs: kernel addr: 0x%x, fdt addr: 0x%x", KERNEL_ADDR, FDT_ADDR);
+    pr_info("boot: kernel addr: 0x%x, fdt addr: 0x%x", KERNEL_ADDR, FDT_ADDR);
     pr_info("");
     pr_info("boot: ready to boot kernel ...");
     pr_info("");
@@ -58,15 +58,14 @@ static void kernel_entry()
 }
 
 int main(void) {
+    // config system clock
+    HAL_Init();
+    sysclk_config();
     ////remap_ivt_to_tcm();
     // mpu setup
     mpu_config();
     SCB_EnableICache();
     SCB_EnableDCache();
-
-    // config system clock
-    HAL_Init();
-    sysclk_config();
 
     // init tty and led
     uart1_tty_init();

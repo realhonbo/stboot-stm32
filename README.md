@@ -1,8 +1,9 @@
 <p align="center">
   <a>
-    <img src=".vscode/.pic/stboot_v1.7.png" alt="Logo" width="643" height="402">
+    <img src=".vscode/.pic/stboot_v1.7.png" alt="Logo" width="605" height="401">
   </a>
 </p>
+
 
 
 
@@ -94,19 +95,19 @@
         ██    ██    ██   ██ ██   ██ ██   ██    ██   
     ██████    ██    ██████  ███████ ███████    ██   
     
-    [    0.045271] mpu: mem 0x24000000 setup, size 512KB
-    [    0.050001] mpu: mem 0xc0000000 setup, size 32MB
-    [    0.054637] mpu: mem 0x08000000 setup, size 2MB
-    [    0.059187] mpu: mem 0x90000000 setup, size 8MB
-    [    0.063735] sysclk: system clock configured, CPU 480MHz
-    [    0.068980] tty: uart1 init success
-    [    0.072484] led: gpioc-13 as triggered led
-    [    0.076606] flash: w25q64 flash ( ID:EF4017 ) init success
+    [    0.000001] sysclk: system clock configured, CPU 480MHz
+    [    0.000068] mpu: mem 0x24000000 setup, size 512KB
+    [    0.000128] mpu: mem 0xc0000000 setup, size 32MB
+    [    0.000189] mpu: mem 0x08000000 setup, size 2MB
+    [    0.000250] mpu: mem 0x90000000 setup, size 8MB
+    [    0.069214] tty: uart1 init success
+    [    0.072722] led: gpioc-13 as triggered led
+    [    0.076846] flash: w25q64 flash ( ID:EF4017 ) init success
     [    0.084001] sdram: configure success
-    [    0.087592] bootargs: kernel addr: 0x90010000, fdt addr: 0x90000000
-    [    0.093888] 
-    [    0.095385] boot: ready to boot kernel ...
-    [    0.099498]
+    [    0.087592] boot: kernel addr: 0x90010000, fdt addr: 0x90000000
+    [    0.093539] 
+    [    0.095036] boot: ready to boot kernel ...
+    [    0.099149] 
     [    0.000000] Booting Linux on physical CPU 0x0
     [    0.000000] Linux version 6.12.0 (boboo@Linux01) (arm-none-eabi-gcc (15:10.3-2021.07-4) 10.3.1 20210621 (release), GNU ld (2.38-3ubuntu1+15build1) 2.38) #3 Sun Nov 24 20:40:54 CST 2024
     [    0.000000] CPU: ARMv7-M [411fc271] revision 1 (ARMv7M), cr=00000000
@@ -200,27 +201,27 @@
     Seeding 256 bits without crediting
     Saving 256 bits of non-creditable seed for next boot
     Starting mdev... OK
-    modprobe: can't change directory to '6.11.0-g29002a45fd6e-dirty': No such file or directory
+    modprobe: can't change directory to '/lib/modules': No such file or directory
     
     Welcome to Buildroot
     user login: root
     Password: 
     Jan  1 00:00:19 login [47]: root login on 'console'
     ~ # uname -a
-    Linux boboo 6.11.0-g29002a45fd6e #47 Mon Nov 18 12:53:12 CST 2024 armv7ml GNU/Linux
+    Linux user 6.12.0 #3 Sun Nov 24 20:40:54 CST 2024 armv7ml GNU/Linux
     ~ # cat /proc/meminfo 
     MemTotal:          32012 kB
     MemFree:           23908 kB
     ... ...
     Percpu:               32 kB
     ~ # iostat 
-    Linux 6.11.0-g29002a45fd6e (boboo)      01/01/70        _armv7ml_       (1 CPU)
+    Linux 6.12.0 (user)     01/01/70        _armv7ml_       (1 CPU)
     
     avg-cpu:  %user   %nice %system %iowait  %steal   %idle
-               1.25    0.00   11.01    0.26    0.00   87.48
+               0.61    0.00    5.99    0.10    0.00   93.30
     
     Device:            tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn
-    mmcblk0           4.28        35.58        13.71       1910        736
+    mmcblk0           1.81        14.77         6.65       1758        792
     
     ~ # 
     ```

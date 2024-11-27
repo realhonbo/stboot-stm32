@@ -22,7 +22,6 @@ void error_print(void)
     "ldr %3, =0xe000ed2c\n"
     "ldr %3, [%3]\n"
     :"=r"(ipsr),"=r"(lr),"=r"(cfsr),"=r"(hfsr)
-    ::"memory","cc"
     );
 
     pr_info("Error: Unhandled exception: IPSR = 0x%08x LR = 0x%08x CFSR = 0x%08x HFSR = 0x%08x",
