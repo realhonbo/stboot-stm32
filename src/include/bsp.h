@@ -2,6 +2,10 @@
 #define BSP_EASYCONFIG_H
 
 #define HSE_FREQUENCY          25
+
+/*
+ * CPU frequency
+ */
 #define SYSCLK_PLL_N           192
 #define SYSCLK_PLL_M           5
 #define SYSCLK_PLL_P           2

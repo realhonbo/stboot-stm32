@@ -1,4 +1,5 @@
 /dts-v1/;
+#include <dt-bindings/gpio/gpio.h>
 #include "stm32h743.dtsi"
 #include "stm32h7-pinctrl.dtsi"
 
@@ -7,13 +8,26 @@
 	compatible = "st,stm32h743i-fk", "st,stm32h743";
 
 	chosen {
-		bootargs = "root=/dev/ram";
+		bootargs = "console=tty0 console=ttySTM0,115200n8 earlyprintk ignore_loglevel root=/dev/mmcblk0 rw rootwait panic=10";
 		stdout-path = "serial0:115200n8";
 	};
 
 	memory@c0000000 {
 		device_type = "memory";
 		reg = <0xc0000000 0x2000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		linux,cma {
+			compatible = "shared-dma-pool";
+			no-map;
+			size = <0x100000>;
+			linux,dma-default;
+		};
 	};
 
 	aliases {
@@ -83,4 +97,64 @@
 	pins2 {
 		pinmux = <STM32_PINMUX('A', 10, AF7)>;
 	};
+};
+
+&pinctrl {
+	usbotg_fs_pins_a: usbotg-fs-0 {
+		pins {
+			pinmux = <STM32_PINMUX('A', 13, AF12)>, // ID
+				 	 <STM32_PINMUX('A', 11, AF12)>, //* D-
+				 	 <STM32_PINMUX('A', 12, AF12)>; //* D+
+			bias-disable;
+			drive-push-pull;
+			slew-rate = <2>;
+		};
+	};
+
+	spi5_pins: spi5-0 {
+		pins1 {
+			pinmux = <STM32_PINMUX('K',  0, AF5)>, // SCL
+				 	 <STM32_PINMUX('J', 10, AF5)>; // SDA
+			bias-disable;
+			drive-push-pull;
+			slew-rate = <2>;
+		};
+	};
+};
+
+&usbotg_fs {
+	dr_mode = "host";
+	pinctrl-0 = <&usbotg_fs_pins_a>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&spi5 {
+	status ="okay";
+	pinctrl-0 = <&spi5_pins>;
+	pinctrl-names = "default";
+	cs-gpios = <&gpioh 5 GPIO_ACTIVE_LOW>; // CS
+	dmas = <&dmamux1 85 0x400 0x05>,
+		   <&dmamux1 86 0x400 0x05>;
+	dma-names = "rx", "tx";
+
+	st7789: st7789v@0 {
+		compatible = "sitronix,st7789v";
+		reg = <0>;
+		spi-max-frequency = <60000000>;
+		rotate = <90>;
+		spi-cpol;
+		spi-cpha;
+		rgb;
+		fps = <30>;
+		buswidth = <8>;
+		dc-gpios = <&gpioj 11 GPIO_ACTIVE_HIGH>; // DC
+		led-gpios = <&gpioh 6 GPIO_ACTIVE_HIGH>; // BL
+		debug = <0>;
+		status ="okay";
+	};
+};
+
+&dma1 {
+	status = "okay";
 };
