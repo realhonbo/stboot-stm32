@@ -75,6 +75,7 @@ void mpu_config(void)
  *      System Clock source   = HSE -> PLL
  *      SYSCLK(CPU: MHz)      = 480
  *      HCLK(AXI & AHB: MHz)  = 240
+ *      USB CLK(: MHz)        = 48
  *      AHB Prescaler         = 2
  *      D1 APB3 Prescaler     = 2 - 100MHz
  *      D2 APB1 Prescaler     = 2 - 100MHz
@@ -94,6 +95,7 @@ void sysclk_config(void)
         int fcpu;
         RCC_OscInitTypeDef RCC_OscInitStruct = {0};
         RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+        RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
 /* 请求更新电源配置 */
         HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
@@ -102,8 +104,10 @@ void sysclk_config(void)
         while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY));
         __HAL_RCC_PLL_PLLSOURCE_CONFIG(RCC_PLLSOURCE_HSE);
 /* RCC Oscillators振荡器 */
-        RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+        RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE |
+                                           RCC_OSCILLATORTYPE_HSI48;
         RCC_OscInitStruct.HSEState       = RCC_HSE_ON;
+        RCC_OscInitStruct.HSI48State     = RCC_HSI48_ON;
         RCC_OscInitStruct.PLL.PLLState   = RCC_PLL_ON;
         RCC_OscInitStruct.PLL.PLLSource  = RCC_PLLSOURCE_HSE;
         RCC_OscInitStruct.PLL.PLLM       = SYSCLK_PLL_M;
@@ -114,12 +118,14 @@ void sysclk_config(void)
         RCC_OscInitStruct.PLL.PLLRGE     = RCC_PLL1VCIRANGE_2;
         RCC_OscInitStruct.PLL.PLLVCOSEL  = RCC_PLL1VCOWIDE;
         RCC_OscInitStruct.PLL.PLLFRACN   = 0;
-        if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-                early_pr_info("Error: file: %s, line: %d", __FILE__, __LINE__);
+        if (HAL_RCC_OscConfig(&RCC_OscInitStruct)) {
+                early_pr_info("Error: file: %s, line: %d", 
+                                __FILE__, __LINE__);
         }
 /* 初始化CPU | AHB | APB总线时钟 */
-        RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 |
-                RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
+        RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | 
+                                      RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2 | 
+                                      RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
         RCC_ClkInitStruct.SYSCLKSource   = RCC_SYSCLKSOURCE_PLLCLK;
         RCC_ClkInitStruct.SYSCLKDivider  = RCC_SYSCLK_DIV1;
         RCC_ClkInitStruct.AHBCLKDivider  = RCC_HCLK_DIV2;
@@ -127,15 +133,25 @@ void sysclk_config(void)
         RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
         RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
         RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV2;
-        if(HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK) {
-                early_pr_info("Error: file: %s, line: %d", __FILE__, __LINE__);
+        if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4)) {
+                early_pr_info("Error: file: %s, line: %d", 
+                                __FILE__, __LINE__);
+        }
+
+        PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB;
+        PeriphClkInitStruct.UsbClockSelection    = RCC_USBCLKSOURCE_HSI48;
+        if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct)) {
+                early_pr_info("Error: file: %s, line: %d", 
+                                __FILE__, __LINE__);
         }
 /* 使用IO高速模式, 要使能IO补偿
- * 1. 使能CSI clock
- * 2. 使能SYSCFG clock
- * 3. 使能IO补偿单元, 设置SYSCFG_CCCSR寄存器的bit0
+ * 1. CSI clock
+ * 2. SYSCFG clock
+ * 3. 使能 IO 补偿单元, 设置 SYSCFG_CCCSR 寄存器的 bit-0
+ * 4. USBFS clock
  */     __HAL_RCC_CSI_ENABLE();
         __HAL_RCC_SYSCFG_CLK_ENABLE();
+        __HAL_RCC_USB_OTG_FS_CLK_ENABLE();
         HAL_EnableCompensationCell();
 /* D2、D3域的SRAM需要单独使能 */
 #if defined(USE_SRAM_D2) || defined(USE_SRAM_D3)

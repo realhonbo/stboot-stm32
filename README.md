@@ -241,6 +241,18 @@
     [    2.711281] graphics fb0: fb_st7789v frame buffer, 320x240, 150 KiB video memory, 4 KiB buffer memory, fps=100, spi0.0 at 60 MHz
     [    2.758827]  cs_system_cfg: CoreSight Configuration manager initialised
     [    3.046120] clk: Disabling unused clocks
+    [    4.775046] usb 1-1: new full-speed USB device number 2 using dwc2
+    [    5.019529] usb 1-1: not running at top speed; connect to a high speed hub
+    [    5.109548] usb 1-1: New USB device found, idVendor=090c, idProduct=1000, bcdDevice=11.00
+    [    5.137419] usb 1-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+    [    5.158924] usb 1-1: Product: U330
+    [    5.168224] usb 1-1: Manufacturer: aigo
+    [    5.183052] usb 1-1: SerialNumber: 0114510358295192
+    [    5.295633] usb-storage 1-1:1.0: USB Mass Storage device detected
+    [    5.369855] scsi host0: usb-storage 1-1:1.0
+    [    6.782780] usb 1-1: reset full-speed USB device number 2 using dwc2
+    [    7.322208] scsi 0:0:0:0: Direct-Access     aigo     U330             1100 PQ: 0 ANSI: 6
+    [    7.433748] sd 0:0:0:0: Attached scsi generic sg0 type 0
     [    8.254187] EXT4-fs (mmcblk0): recovery complete
     [    8.279262] EXT4-fs (mmcblk0): mounted filesystem 30a9e076-6442-45c9-aea0-64ae2845ef0e r/w with ordered data mode. Quota mode: disabled.
     [    8.319791] VFS: Mounted root (ext4 filesystem) on device 179:0.

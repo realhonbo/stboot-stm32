@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include "bsp.h"
 
-SDRAM_HandleTypeDef      hsdram1;
 
 #define SDRAM_TIMEOUT                ((uint32_t)0x1000)
 // burst length
@@ -132,6 +131,7 @@ static void sdram_send_command(SDRAM_HandleTypeDef *hsdram)
 void sdram_init(void)
 {
         FMC_SDRAM_TimingTypeDef timing;
+        SDRAM_HandleTypeDef hsdram1;
 
         hsdram1.Instance    = FMC_SDRAM_DEVICE;
         hsdram1.Init.SDBank = FMC_SDRAM_BANK1;
