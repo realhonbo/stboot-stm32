@@ -12,18 +12,31 @@
 #include "bsp.h"
 #include "errno.h"
 
-#define N_CMD          6
+#define N_CMD               6
+#define MAX_HISTORY_LINE   32
 #define CMD_SPACE_L1   "    "
 #define CMD_SPACE_L2   "        "
 
+static char command[N_CMD][8] = {
+        "boot",
+        "help",
+        "clear",
+        "md",
+        "mtest",
+        "info",
+};
+
+/** cmd cache */
+struct cc_cache {
+    char *cache[MAX_HISTORY_LINE][64];
+    int ptr;
+    int flag;
+};
+
+static struct cc_cache ccache;
+
 // command help println
 #define println(level, fmt) printf(CMD_SPACE_##level"%s\r\n",fmt)
-
-// echo: 回显
-#define CMD_ECHO(rc) \
-    printf("%s%s \b", &rc, &buf[idx_arrow]);\
-    for (i = 0; i < idx - idx_arrow; i++)\
-        putchar('\b')
 
 // compare prefix of buf with commands
 #define CMD_CMP(i)\
@@ -42,17 +55,31 @@ static void parse_cmd_name(const char *buf, char *cmd, int *idx)
     *idx = i;
 }
 
+// store command history to cmd_cache
+static void storeto_cmd_cache(const char *buf)
+{
+    if (!(ccache.ptr < MAX_HISTORY_LINE))
+        ccache.ptr = -1;
+    ccache.ptr ++;
+    memcpy(ccache.cache[ccache.ptr], buf, 64);
+}
+
+static void load_lastcmd(char *buf)
+{
+    int i;
+
+    if (ccache.ptr - ccache.flag < 0 ||
+            !ccache.cache[ccache.ptr-ccache.flag][0])
+        return;
+    memcpy(buf, ccache.cache[ccache.ptr-ccache.flag], 64);
+    ccache.flag ++;
+}
+
+static void command_read(char *buf);
+static int parse_command(const char *, char *);
 static int parse_address(const char *, char *, int *, int *);
-static int parse_md(const char *buf, char *cmd, int *address, int *length);
-static void md(int *address, int length);
-static char command[N_CMD][8] = {
-    "boot",
-    "help",
-    "clear",
-    "md",
-    "mtest",
-    "info",
-};
+static int parse_md(const char *, char *, int *, int *);
+static void md(int *, int );
 
 /**
  * console command
@@ -88,7 +115,7 @@ int console_cmd(void)
  *
  * DEL: Delete key: \033[ ... ~
  */
-void command_read(char *buf)
+static void command_read(char *buf)
 {
     int idx = 0;
     int idx_arrow = idx;
@@ -109,7 +136,12 @@ void command_read(char *buf)
                 idx_arrow++;
             }
             break;
-        case 'A':
+        case 'A': // last command
+            for(i = 0; i < strlen(buf); i++)
+                printf("\b \b");
+            load_lastcmd(buf);
+            printf("%s", buf);
+            break;
         case 'D': // left
             if (idx_arrow > 0) {
                 printf("\033[D");
@@ -122,7 +154,9 @@ void command_read(char *buf)
         continue;
     case 127: // Backspace
         if (idx > 0) {
-            CMD_ECHO(*"\b \b");
+            printf("\b \b%s \b", &buf[idx_arrow]);
+            for (i = 0; i < idx - idx_arrow; i++)
+                putchar('\b');
             memmove(&buf[idx_arrow-1], &buf[idx_arrow], idx-idx_arrow);
             buf[--idx] = '\0';
             idx_arrow--;
@@ -142,9 +176,13 @@ void command_read(char *buf)
         continue;
     case '\r': // Enter
         printf("\r\n");
+        storeto_cmd_cache(buf);
+        ccache.flag = 0;
         return;
     default:
-        CMD_ECHO(rc);
+        printf("%c%s \b", rc, &buf[idx_arrow]);
+        for (i = 0; i < idx - idx_arrow; i++)
+            putchar('\b');
         // insert
         if (idx == idx_arrow) {
             buf[idx++] = rc;
@@ -161,7 +199,7 @@ void command_read(char *buf)
 /*
  * parse command input
  */
-int parse_command(const char *buf, char *cmd) {
+static int parse_command(const char *buf, char *cmd) {
     int i;
     int kernel = 0, fdt = 0;
     int address, length;

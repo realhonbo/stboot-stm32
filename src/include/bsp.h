@@ -46,15 +46,14 @@ void mpu_config(void);
 void sdram_init(void);
 void led_init(void);
 void led_timer_handler(void);
-void console_init(void);
+
 void Error_Handler(char *, int);
+void console_init(void);
 void error_print(void);
 void pr_info(const char *, ...);
-void kernel_entry(int kernel, int fdt);
-
-void command_read(char *);
 int console_cmd(void);
-int parse_command(const char *, char *);
+
+void kernel_entry(int, int);
 
 void memory_speed_test(void);
 #endif
