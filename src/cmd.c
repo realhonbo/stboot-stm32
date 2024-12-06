@@ -1,5 +1,5 @@
 /**
- * @file cmd.rc
+ * @file cmd.c
  * @author Honbo (hehongbo918@gmail.com)
  * @brief process command for console input
  * @version 1.0
@@ -12,23 +12,76 @@
 #include "bsp.h"
 #include "errno.h"
 
-#define N_CMD          4
+#define N_CMD          6
 #define CMD_SPACE_L1   "    "
 #define CMD_SPACE_L2   "        "
 
+// command help println
+#define println(level, fmt) printf(CMD_SPACE_##level"%s\r\n",fmt)
+
 // echo: 回显
 #define CMD_ECHO(rc) \
-    printf("%s%s \b", &rc, &buf[i_arrow]);\
-    for (b = 0; b < i - i_arrow; b++)\
+    printf("%s%s \b", &rc, &buf[idx_arrow]);\
+    for (i = 0; i < idx - idx_arrow; i++)\
         putchar('\b')
 
+// compare prefix of buf with commands
+#define CMD_CMP(i)\
+    strncmp(buf, command[i], strlen(command[i]))
+
+// get name from buf to cmd
+static void parse_cmd_name(const char *buf, char *cmd, int *idx)
+{
+    int i = *idx;
+
+    while (buf[i] != ' ' && buf[i] != '\0') {
+        cmd[i] = buf[i];
+        i++;
+    }
+    cmd[i] = '\0';
+    *idx = i;
+}
+
 static int parse_address(const char *, char *, int *, int *);
+static int parse_md(const char *buf, char *cmd, int *address, int *length);
+static void md(int *address, int length);
 static char command[N_CMD][8] = {
     "boot",
     "help",
     "clear",
-    "rdreg", //TODO: read peripheral register
+    "md",
+    "mtest",
+    "info",
 };
+
+/**
+ * console command
+ * 
+ ** if enter no-command, use default config in bsp.h
+ * else use entered address
+ *
+ *@usage: boot    90010000 -   90000000
+ *        boot  0x90010000 - 0x90000000
+ *        <cmd>   <kernel> -    <fdt>
+ *
+ */
+int console_cmd(void)
+{
+    char buf[64] = "", cmd[8] = "";
+
+#ifdef CONSOLE_CMD
+    printf("st-boot > ");
+    setvbuf(stdin,  NULL, _IONBF, 0);
+    setvbuf(stdout, NULL, _IONBF, 0);
+
+    command_read(buf);
+
+    // solve commands
+    if (parse_command(buf, cmd))
+        return -EFAULT;
+#endif
+    return 0;
+}
 
 /**
  ** read command to buffer
@@ -37,8 +90,9 @@ static char command[N_CMD][8] = {
  */
 void command_read(char *buf)
 {
-    int i = 0, b;
-    int i_arrow = i;
+    int idx = 0;
+    int idx_arrow = idx;
+    int i, len;
     char rc;
 
     while (1) {
@@ -50,16 +104,16 @@ void command_read(char *buf)
         switch (getchar()) {
         case 'B':
         case 'C': // right
-            if (i_arrow < i) {
+            if (idx_arrow < idx) {
                 printf("\033[C");
-                i_arrow++;
+                idx_arrow++;
             }
             break;
         case 'A':
         case 'D': // left
-            if (i_arrow > 0) {
+            if (idx_arrow > 0) {
                 printf("\033[D");
-                i_arrow--;
+                idx_arrow--;
             }
             break;
         default:
@@ -67,13 +121,24 @@ void command_read(char *buf)
         }
         continue;
     case 127: // Backspace
-        if (i > 0) {
+        if (idx > 0) {
             CMD_ECHO(*"\b \b");
-            memmove(&buf[i_arrow-1], &buf[i_arrow], i-i_arrow);
-            buf[--i] = '\0';
-            i_arrow--;
+            memmove(&buf[idx_arrow-1], &buf[idx_arrow], idx-idx_arrow);
+            buf[--idx] = '\0';
+            idx_arrow--;
         }
-        if (!i) buf[i] = '\0';
+        if (!idx) buf[idx] = '\0';
+        continue;
+    case '\t': // Tab Complete
+        for (i = 0; i < N_CMD; i++) {
+            if (!strncmp(buf, command[i], idx)) {
+                len = strlen(command[i]+idx);
+                printf("%s", command[i]+idx);
+                memcpy(&buf[idx], command[i]+idx, len);
+                idx += len;
+                idx_arrow += len;
+            }
+        }
         continue;
     case '\r': // Enter
         printf("\r\n");
@@ -81,13 +146,13 @@ void command_read(char *buf)
     default:
         CMD_ECHO(rc);
         // insert
-        if (i == i_arrow) {
-            buf[i++] = rc;
-            i_arrow++;
+        if (idx == idx_arrow) {
+            buf[idx++] = rc;
+            idx_arrow++;
         } else {
-            memmove(&buf[i_arrow+1], &buf[i_arrow], i-i_arrow);
-            buf[i_arrow++] = rc;
-            i++;
+            memmove(&buf[idx_arrow+1], &buf[idx_arrow], idx-idx_arrow);
+            buf[idx_arrow++] = rc;
+            idx++;
         }
     }
     }
@@ -96,28 +161,52 @@ void command_read(char *buf)
 /*
  * parse command input
  */
-int parse_command(const char *buf, char *cmd, int *kernel, int *fdt) {
+int parse_command(const char *buf, char *cmd) {
     int i;
+    int kernel = 0, fdt = 0;
+    int address, length;
 
-    if (!strncmp(buf, command[0], strlen(command[0]))) {
-        // boot
-        if(parse_address(buf, cmd, kernel, fdt))
+    if (!strlen(buf) || !CMD_CMP(0))
+    { // boot
+        if(parse_address(buf, cmd, &kernel, &fdt))
             return -EFAULT;
+        kernel_entry(kernel, fdt);
         return 0;
-    } else if (!strncmp(buf, command[1], strlen(command[1]))) {
-        // help
+    }
+    else if (!CMD_CMP(1))
+    { // help
         printf("support command:\r\n");
         for (i = 0; i < N_CMD; i++) {
-            printf(CMD_SPACE_L1"%s\r\n", command[i]);
-            if (!strncmp(command[i], "boot", strlen("boot")))
-                printf(CMD_SPACE_L2"boot <kernel address> - <fdt address>\r\n");
+            println(L1, command[i]);
+            if (!strncmp(command[i], "boot", 4))
+                println(L2, "boot <kernel address> - <fdt address>");
+            else if (!strncmp(command[i], "md", 2)) {
+                println(L2, "md <address>  <length>");
+                println(L2, "read CPUID: md e000ed00 1");
+                println(L2, "411fc271");
+                println(L2, "! Both address and length are hex format");
+            }
         }
-    } else if (!strncmp(buf, command[2], strlen(command[2])))
-        // clear
+        printf("\r\n");
+    }
+    else if (!CMD_CMP(2))
+    { // clear
         printf("\033[2J\033[H");
+    }
+    else if (!CMD_CMP(3))
+    { // md
+        if (parse_md(buf, cmd, &address, &length))
+            return -EFAULT;
+        md((int *)address, length);
+    }
+    else if (!CMD_CMP(4))
+    {
+        memory_speed_test();
+    }
     else
-        // unknown
+    { // unknown
         pr_info("error: %s: no such a command", buf);
+    }
     console_cmd();
     return 0;
 }
@@ -129,7 +218,6 @@ int parse_command(const char *buf, char *cmd, int *kernel, int *fdt) {
 static void __parse_address(const char *buf, int *idx, int *address)
 {
     int i = *idx;
-    *address = 0;
 
     if (buf[i] == '-') i++;
 
@@ -152,29 +240,63 @@ static void __parse_address(const char *buf, int *idx, int *address)
  * instead of: sscanf(buf, "%s %x - %x", cmd, &kernel, &fdt) != 3
  */
 static int parse_address(const char *buf, char *cmd, int *kernel, int *fdt) {
-    int i = 0;
+    int idx = 0;
+
+    if (strlen(buf) < 9)
+        return 0;
 
     // parse command
-    while (buf[i] != ' ' && buf[i] != '\0') {
-        cmd[i] = buf[i];
-        i++;
-    }
-    cmd[i] = '\0';
+    parse_cmd_name(buf, cmd, &idx);
 
     // parse kernel address
-    while (buf[i] == ' ') i++; // skip space
-    __parse_address(buf, &i, kernel);
+    while (buf[idx] == ' ') idx++; // skip space
+    __parse_address(buf, &idx, kernel);
 
     // no-support rootfs address
-    while (buf[i] == ' ') i++;
-    __parse_address(buf, &i, 0);
+    while (buf[idx] == ' ') idx++;
+    __parse_address(buf, &idx, 0);
 
     // parse fdt address
-    while (buf[i] == ' ') i++;
-    __parse_address(buf, &i, fdt);
+    while (buf[idx] == ' ') idx++;
+    __parse_address(buf, &idx, fdt);
 
     // check if all required fields were parsed
     if (cmd[0] == '\0' || *kernel == 0 || *fdt == 0)
+        return -EFAULT;
+    return 0;
+}
+
+/**
+ * memory display
+ */
+static void md(int *address, int length)
+{
+    int i;
+
+    for (i = 0; i < length; i++) {
+        printf("%08x ", address[i]);
+        if (i % 4 == 3)
+            printf("\r\n");
+    }
+    printf("\r\n");
+}
+
+static int parse_md(const char *buf, char *cmd, int *address, int *length)
+{
+    int idx = 0;
+
+    // jump over name
+    parse_cmd_name(buf, cmd, &idx);
+
+    // parse address
+    while (buf[idx] == ' ') idx++;
+    __parse_address(buf, &idx, address);
+
+    // parse length
+    while (buf[idx] == ' ') idx++;
+    __parse_address(buf, &idx, length);
+
+    if (length == 0)
         return -EFAULT;
     return 0;
 }

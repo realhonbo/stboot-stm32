@@ -38,7 +38,7 @@ static void remap_ivt_to_tcm(void)
 
  * (KERNEL_ADDR | 1) -> for thumb mode
  */
-static void kernel_entry(int kernel, int fdt)
+void kernel_entry(int kernel, int fdt)
 {
     if(!kernel && !fdt) {
         kernel = KERNEL_ADDR;
@@ -62,37 +62,6 @@ static void kernel_entry(int kernel, int fdt)
     "bx %2"
     ::"r"(SysTick_BASE),"r"(fdt),"r"(kernel | 1)
     :"memory","cc","r0","r1","r2");
-}
-
-/**
- * console command
- * 
- ** if enter no-command, use default config in bsp.h
- * else use entered address
- *
- *@usage: boot    90010000 -   90000000
- *        boot  0x90010000 - 0x90000000
- *        <cmd>   <kernel> -    <fdt>
- *
- */
-int console_cmd(void)
-{
-    int kernel = 0, fdt = 0;
-    char buf[64] = "", cmd[8] = "";
-
-#ifdef CONSOLE_CMD
-    printf("st-boot > ");
-    setvbuf(stdin, NULL, _IONBF, 0);
-
-    command_read(buf);
-
-    // solve command
-    if (strlen(buf)) {
-        if (parse_command(buf, cmd, &kernel, &fdt))
-            return -EFAULT;
-    }
-#endif
-    kernel_entry(kernel, fdt);
 }
 
 

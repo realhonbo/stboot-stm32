@@ -117,28 +117,26 @@ static inline void memory_read(__IO int *addr)
  * @brief 测试 SDRAM 读写速度 & QSPI-Flash 读速度
  */
 void memory_speed_test(void) {
-    pr_info("");
 /* SDRAM */
     SCB_DisableDCache();
     memory_write(sdram);
-    pr_info("关闭Cache: SDRAM 写速度: %d MB/s", CaculateSpeed);
+    printf("no-cache: sdram write: %d MB/s\r\n", CaculateSpeed);
     memory_read(sdram);
-    pr_info("关闭Cache: SDRAM 读速度: %d MB/s", CaculateSpeed);
+    printf("no-cache: sdram  read: %d MB/s\r\n", CaculateSpeed);
 
     SCB_EnableDCache();
     memory_write(sdram);
-    pr_info("开启Cache: SDRAM 写速度: %d MB/s", CaculateSpeed);
+    printf(" d-cache: sdram write: %d MB/s\r\n", CaculateSpeed);
     memory_read(sdram);
-    pr_info("开启Cache: SDRAM 读速度: %d MB/s", CaculateSpeed);
+    printf(" d-cache: sdram  read: %d MB/s\r\n", CaculateSpeed);
 
 /* QSPI Flash */
     SCB_DisableDCache();
     memory_read(qspi);
-    pr_info("关闭Cache: QSPI Flash读速度: %d MB/s", CaculateSpeed);
-    
+    printf("no-cache: qspi-flash read: %d MB/s\r\n", CaculateSpeed);
+
     SCB_EnableDCache();
     memory_read(qspi);
-    pr_info("开启Cache: QSPI Flash读速度: %d MB/s", CaculateSpeed);
-
-    while ( 1 );
+    printf(" d-cache: qspi-flash read: %d MB/s\r\n", CaculateSpeed);
+    printf("\r\n");
 }

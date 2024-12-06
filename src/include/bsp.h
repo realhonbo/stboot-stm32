@@ -50,9 +50,11 @@ void console_init(void);
 void Error_Handler(char *, int);
 void error_print(void);
 void pr_info(const char *, ...);
+void kernel_entry(int kernel, int fdt);
 
 void command_read(char *);
 int console_cmd(void);
-int parse_command(const char *, char *, int *, int *);
+int parse_command(const char *, char *);
 
+void memory_speed_test(void);
 #endif
