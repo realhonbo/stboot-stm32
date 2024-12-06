@@ -14,6 +14,7 @@
  * early print buffer config
  */
 #define EPB_BUF_SIZE           512
+#define LOGO_GENERIC
 
 /*
  * hardware configs
@@ -34,6 +35,7 @@
 #define KERNEL_ADDR            (QSPI_FLASH_BASE_ADDR + FDT_SIZE)
 
 #define UART_Baudrate           115200
+#define CONSOLE_CMD
 #define LED_BLINK_TIME          50
 
 
@@ -44,10 +46,13 @@ void mpu_config(void);
 void sdram_init(void);
 void led_init(void);
 void led_timer_handler(void);
-void uart1_tty_init(void);
+void console_init(void);
 void Error_Handler(char *, int);
 void error_print(void);
 void pr_info(const char *, ...);
-void early_pr_info(const char *, ...);
+
+void command_read(char *);
+int console_cmd(void);
+int parse_command(const char *, char *, int *, int *);
 
 #endif

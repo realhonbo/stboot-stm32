@@ -33,62 +33,59 @@ void mpu_config(void)
         mpu_init.TypeExtField = MPU_TEX_LEVEL1;
         mpu_init.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
         HAL_MPU_ConfigRegion(&mpu_init);
-        early_pr_info("mpu: mem 0x%08x setup, size 512KB", mpu_init.BaseAddress);
+        pr_info("mpu: mem 0x%08x setup, size 512KB", mpu_init.BaseAddress);
 #ifdef USE_SRAM_D2 /* SRAM_D2 */
         mpu_init.BaseAddress = 0x30000000;
         mpu_init.Size = MPU_REGION_SIZE_256KB;
         mpu_init.Number = MPU_REGION_NUMBER1;
         HAL_MPU_ConfigRegion(&mpu_init);
-        early_pr_info("mpu: mem 0x%08x setup, size 256KB", mpu_init.BaseAddress);
+        pr_info("mpu: mem 0x%08x setup, size 256KB", mpu_init.BaseAddress);
 #endif
 #ifdef USE_SRAM_D3 /* SRAM_D3 */
         mpu_init.BaseAddress = 0x38000000;
         mpu_init.Size = MPU_REGION_SIZE_64KB;
         mpu_init.Number = MPU_REGION_NUMBER2;
         HAL_MPU_ConfigRegion(&mpu_init);
-        early_pr_info("mpu: mem 0x%08x setup, size 64KB", mpu_init.BaseAddress);
+        pr_info("mpu: mem 0x%08x setup, size 64KB", mpu_init.BaseAddress);
 #endif
 /* SDRAM */
         mpu_init.BaseAddress = SDRAM_BASE_ADDR;
         mpu_init.Size = MPU_REGION_SIZE_32MB;
         mpu_init.Number = MPU_REGION_NUMBER3;
         HAL_MPU_ConfigRegion(&mpu_init);
-        early_pr_info("mpu: mem 0x%08x setup, size 32MB", mpu_init.BaseAddress);
+        pr_info("mpu: mem 0x%08x setup, size 32MB", mpu_init.BaseAddress);
 /* FLASH */
         mpu_init.BaseAddress = FLASH_BASE_ADDR;
         mpu_init.Size = MPU_REGION_SIZE_2MB;
         mpu_init.Number = MPU_REGION_NUMBER4;
         HAL_MPU_ConfigRegion(&mpu_init);
-        early_pr_info("mpu: mem 0x%08x setup, size 2MB", mpu_init.BaseAddress);
+        pr_info("mpu: mem 0x%08x setup, size 2MB", mpu_init.BaseAddress);
 /* QSPI FLASH */
         mpu_init.BaseAddress = QSPI_FLASH_BASE_ADDR;
         mpu_init.Size = MPU_REGION_SIZE_8MB;
         mpu_init.Number = MPU_REGION_NUMBER5;
         HAL_MPU_ConfigRegion(&mpu_init);
         HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
-        early_pr_info("mpu: mem 0x%08x setup, size 8MB", mpu_init.BaseAddress);
+        pr_info("mpu: mem 0x%08x setup, size 8MB", mpu_init.BaseAddress);
 }
 
 
-/*
- * 初始化系统时钟
- *      System Clock source   = HSE -> PLL
- *      SYSCLK(CPU: MHz)      = 480
- *      HCLK(AXI & AHB: MHz)  = 240
- *      USB CLK(: MHz)        = 48
- *      AHB Prescaler         = 2
- *      D1 APB3 Prescaler     = 2 - 100MHz
- *      D2 APB1 Prescaler     = 2 - 100MHz
- *      D2 APB2 Prescaler     = 2 - 100MHz
- *      D3 APB4 Prescaler     = 2 - 100MHz
- *      HSE Frequency(MHz)    = 25
- *      PLL_M                 = 5
- *      PLL_N                 = 192
- *      PLL_P                 = 2
- *      PLL_Q                 = 4
- *      PLL_R                 = 2
- *      VDD(V)                = 3.3
- *      Flash Latency(WS)     = 4
+/**
+ * 初始化系统时钟: MHz
+ *       PLL_IN  = OSC_IN -> HSE  = 25
+ *       Vco_IN  = PLL_IN / PLL_M = 5
+ *       Vco_OUT = Vco_IN * PLL_N = 960
+ *CPU:   FCLK = PLL_OUT = Vco_OUT / PLL_P = 480
+ *USB:   1: PLL = Vco_OUT / PLL_Q  = 48
+ *       2: HSI48
+ *HCLK:  (AXI & AHB)  = 240
+ *AHB:   Prescaler = 2
+ *APB:  
+ *       APB1 (D2) = 100
+ *       APB2 (D2) = 100
+ *       APB3 (D1) = 100
+ *       APB4 (D3) = 100
+ *FLASH: Latency (WS) = 4
  */
 void sysclk_config(void)
 {
@@ -119,7 +116,7 @@ void sysclk_config(void)
         RCC_OscInitStruct.PLL.PLLVCOSEL  = RCC_PLL1VCOWIDE;
         RCC_OscInitStruct.PLL.PLLFRACN   = 0;
         if (HAL_RCC_OscConfig(&RCC_OscInitStruct)) {
-                early_pr_info("Error: file: %s, line: %d", 
+                pr_info("Error: file: %s, line: %d", 
                                 __FILE__, __LINE__);
         }
 /* 初始化CPU | AHB | APB总线时钟 */
@@ -134,14 +131,14 @@ void sysclk_config(void)
         RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
         RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV2;
         if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4)) {
-                early_pr_info("Error: file: %s, line: %d", 
+                pr_info("Error: file: %s, line: %d", 
                                 __FILE__, __LINE__);
         }
 
         PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB;
         PeriphClkInitStruct.UsbClockSelection    = RCC_USBCLKSOURCE_HSI48;
         if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct)) {
-                early_pr_info("Error: file: %s, line: %d", 
+                pr_info("Error: file: %s, line: %d", 
                                 __FILE__, __LINE__);
         }
 /* 使用IO高速模式, 要使能IO补偿
@@ -158,7 +155,7 @@ void sysclk_config(void)
         __HAL_RCC_D2SRAM1_CLK_ENABLE();
 #endif
         fcpu = HSE_FREQUENCY * SYSCLK_PLL_N / SYSCLK_PLL_M / SYSCLK_PLL_P;
-        early_pr_info("sysclk: system clock configured, CPU %dMHz", fcpu);
+        pr_info("sysclk: system clock configured, CPU %dMHz", fcpu);
 }
 
 /**

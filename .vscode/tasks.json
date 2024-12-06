@@ -3,28 +3,24 @@
     "type": "shell",
     "tasks": [
         {
-            "label": "download",
+            "label": "program->stm32",
             "command": "openocd",
             "args": [
-                    "-s",
-                    "B:/OpenOCD/share/openocd/scripts",
-                    "-f",
-                    "debugger.cfg",
-                    "-c", "tcl_port disabled",
-                    "-c", "gdb_port disabled",
-                    "-c", "tcl_port disabled",
-                    "-c", "program \"build/stboot.elf\"",
-                    "-c", "reset",
-                    "-c", "shutdown"
+                "-f",
+                "interface/stlink.cfg",
+                "-f",
+                "target/stm32h7x.cfg",
+                "-c",
+                "program build/stboot.bin 0x8000000 verify reset exit"
             ],
             "problemMatcher": [
-                    "$gcc"
+                "$gcc"
             ],
-            "group": { // 设置为默认构建任务: Ctrl + Shift + B 立即执行不必选择
+            "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": "Build",
+            "dependsOn": "Build"
         }
     ]
 }

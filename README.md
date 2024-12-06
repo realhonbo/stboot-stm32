@@ -44,7 +44,7 @@
 - 启动行为
   - 配置  Cache 对于 内存 和 Flash 的读写策略：`mpu_config`
   - 系统时钟设定为 480 MHz：`sysclk_config`
-  - 启用串口 1 作为输出： `uart1_tty_init`
+  - 启用串口 1 作为输出： `console_init`
   - 配置 QSPI-Flash 并开启 XIP 模式：`QSPI_W25Qxx_Init` `QSPI_W25Qxx_MMMode`
   - 启用 SDRAM：`sdram_init`
   - 关闭 DCache 与中断，跳转到内核：`kernel_entry`
@@ -69,8 +69,10 @@
   - `UART_Baudrate`：串口波特率（default **115200** bps）
   
   - `LED_BLINK_TIME`：stboot 启动闪烁间隔（default **50ms**）
-
-
+  
+  - `LOGO_GENERIC`：更通用的 LOGO 不易乱码
+  
+    
 
 - config
 
@@ -99,25 +101,27 @@
   - 烧录完成并复位后，stboot 与内核的启动信息如下
   
     ```shell
-    ██████ ████████ ██████  ███████ ███████ ████████
-    ██        ██    ██   ██ ██   ██ ██   ██    ██   
-    ██████    ██    ██████  ██   ██ ██   ██    ██   
-        ██    ██    ██   ██ ██   ██ ██   ██    ██   
-    ██████    ██    ██████  ███████ ███████    ██   
+    -----------_______________  ____  ____  ______  
+       -------/ ___/_  __/ __ )/ __ \/ __ \/_  __/
+         -----\__ \ / / / __  / / / / / / / / /   
+       ------___/ // / / /_/ / /_/ / /_/ / / /      
+    --------/____//_/ /_____/\____/\____/ /_/     
     
-    [    0.000001] sysclk: system clock configured, CPU 480MHz
-    [    0.000068] mpu: mem 0x24000000 setup, size 512KB
-    [    0.000128] mpu: mem 0xc0000000 setup, size 32MB
-    [    0.000189] mpu: mem 0x08000000 setup, size 2MB
-    [    0.000250] mpu: mem 0x90000000 setup, size 8MB
-    [    0.069214] tty: uart1 init success
-    [    0.072722] led: gpioc-13 as triggered led
-    [    0.076846] flash: w25q64 flash ( ID:EF4017 ) init success
-    [    0.084001] sdram: configure success
-    [    0.087592] boot: kernel addr: 0x90010000, fdt addr: 0x90000000
-    [    0.093539] 
-    [    0.095036] boot: ready to boot kernel ...
-    [    0.099149] 
+    [    0.000003] sysclk: system clock configured, CPU 480MHz
+    [    0.000078] vector: vectors -> DTCM 0x20000000, .itcm -> ITCM 0x00001000
+    [    0.000147] mpu: mem 0x24000000 setup, size 512KB
+    [    0.000207] mpu: mem 0xc0000000 setup, size 32MB
+    [    0.000266] mpu: mem 0x08000000 setup, size 2MB
+    [    0.000326] mpu: mem 0x90000000 setup, size 8MB
+    [    0.052492] tty: uart1 init success
+    [    0.056001] led: gpioc-13 as triggered led
+    [    0.060125] flash: w25q64 flash ( ID:EF4017 ) init success
+    [    0.067001] sdram: configure success
+    st-boot > boot 90010000 - 90000000
+    [   25.550953] boot: kernel addr: 0x90010000, fdt addr: 0x90000000
+    [   25.556904] 
+    [   25.558403] boot: ready to boot kernel ...
+    [   25.562521] 
     [    0.000000] Booting Linux on physical CPU 0x0
     [    0.000000] Linux version 6.12.0 (boboo@Linux01) (arm-none-eabi-gcc (15:10.3-2021.07-4) 10.3.1 20210621 (release), GNU ld (2.38-3ubuntu1+15build1) 2.38) #115 Tue Dec  3 00:31:02 CST 2024
     [    0.000000] CPU: ARMv7-M [411fc271] revision 1 (ARMv7M), cr=00000000

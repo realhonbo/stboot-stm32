@@ -17,8 +17,23 @@
 
 static UART_HandleTypeDef tty;
 static char epb_buffer[EPB_BUF_SIZE];
+static int early_flag = 1;
 
-static float __current(void)
+/* lib prototype */
+int __io_putchar(int ch)
+{
+    HAL_UART_Transmit(&tty, (uint8_t *)&ch, 1, 100);
+    return ch;
+}
+
+int __io_getchar(void)
+{
+    uint8_t ch;
+    HAL_UART_Receive(&tty, &ch, 1, HAL_MAX_DELAY);
+    return ch;
+}
+
+static float current(void)
 {
     int load, val;
     float us, ms;
@@ -30,35 +45,6 @@ static float __current(void)
     ms = HAL_GetTick() * 0.001;
 
     return ms + us;
-}
-
-/*
- * early message before tty init
- */
-void early_pr_info(const char *fmt, ...)
-{
-    char curr[15];
-    char *buf;
-    static int epb_ptr;
-    int size;
-    va_list args;
-
-    sprintf(curr, "[%12.6f] ", __current());
-
-    va_start(args, fmt);
-    vasiprintf(&buf, fmt, args);
-    va_end(args);
-
-    size = sizeof(curr);
-    memcpy(&epb_buffer[epb_ptr], curr, size);
-    epb_ptr += size;
-
-    size = strlen(buf);
-    memcpy(&epb_buffer[epb_ptr], buf, size);
-    epb_ptr += size;
-    epb_buffer[epb_ptr++] = '\0';
-
-    free(buf);
 }
 
 static void flush_epb(void)
@@ -76,31 +62,45 @@ static void flush_epb(void)
 
 /*
  * print info
- * gcc will inline __current
+ * gcc will inline current
  */
-int __io_putchar(int ch)
-{
-    HAL_UART_Transmit(&tty, (uint8_t *)&ch, 1, 100);
-    return ch;
-}
-
 void pr_info(const char *fmt, ...)
 {
+    char *buf;
+    char curr[15];
+    static int epb_ptr;
     va_list args;
 
-    printf("[%12.6f] ", __current());
+    // early print before console init
+    if (early_flag) {
+        sprintf(curr, "[%12.6f] ", current());
 
-    va_start(args, fmt);
-    vprintf(fmt, args);
-    va_end(args);
+        va_start(args, fmt);
+        vasiprintf(&buf, fmt, args);
+        va_end(args);
 
-    printf("\r\n");
+        memcpy(&epb_buffer[epb_ptr], curr, sizeof(curr));
+        epb_ptr += sizeof(curr);
+        memcpy(&epb_buffer[epb_ptr], buf, strlen(buf));
+        epb_ptr += strlen(buf);
+
+        epb_buffer[epb_ptr++] = '\0';
+        free(buf);
+    } else {
+        printf("[%12.6f] ", current());
+
+        va_start(args, fmt);
+        vprintf(fmt, args);
+        va_end(args);
+
+        printf("\r\n");
+    }
 }
 
 /*
  * uart hardware config
  */
-void uart1_tty_init(void)
+void console_init(void)
 {
     tty.Instance        = USART1;
     tty.Init.BaudRate   = UART_Baudrate;
@@ -114,6 +114,15 @@ void uart1_tty_init(void)
     HAL_UARTEx_SetRxFifoThreshold(&tty, UART_RXFIFO_THRESHOLD_1_8);
     HAL_UARTEx_DisableFifoMode(&tty);
 
+#ifdef LOGO_GENERIC
+    printf("\r\n");
+    printf("-----------_______________  ____  ____  ______  \r\n");
+    printf("   -------/ ___/_  __/ __ )/ __ \\/ __ \\/_  __/\r\n");
+    printf("     -----\\__ \\ / / / __  / / / / / / / / /   \r\n");
+    printf("   ------___/ // / / /_/ / /_/ / /_/ / / /      \r\n");
+    printf("--------/____//_/ /_____/\\____/\\____/ /_/     \r\n");
+    printf("\r\n");
+#else
     printf("\r\n");
     printf("██████ ████████ ██████  ███████ ███████ ████████\r\n");
     printf("██        ██    ██   ██ ██   ██ ██   ██    ██   \r\n");
@@ -121,7 +130,9 @@ void uart1_tty_init(void)
     printf("    ██    ██    ██   ██ ██   ██ ██   ██    ██   \r\n");
     printf("██████    ██    ██████  ███████ ███████    ██   \r\n");
     printf("\r\n");
+#endif
 
+    early_flag = 0;
     flush_epb();
     pr_info("tty: uart1 init success");
 }

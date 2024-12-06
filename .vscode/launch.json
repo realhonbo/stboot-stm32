@@ -8,7 +8,7 @@
             "executable": "./build/stboot.elf",
             "request": "launch",
             "type": "cortex-debug",
-            "runToEntryPoint": "main",
+            //"runToEntryPoint": "main",
             "servertype": "openocd",
             "configFiles": [
                 "interface/stlink.cfg",
