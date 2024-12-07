@@ -3,9 +3,9 @@
  * @author Honbo (hehongbo918@gmail.com)
  * @brief process command for console input
  * @version 1.0
- * 
- * @copyright Copyright (rc) 2024
- * 
+ *
+ * @copyright Copyright (c) 2024
+ *
  */
 #include <stm32h7xx_hal.h>
 #include <stdio.h>
@@ -22,8 +22,8 @@ static char command[N_CMD][8] = {
         "boot",
         "help",
         "clear",
-        "md",
-        "mw",
+        "md",    /* mem display */
+        "mw",    /* mem write */
         "mtest", /* mem test */
         "cache", /* cache control */
         "version",
@@ -79,7 +79,7 @@ static void load_lastcmd(char *buf)
 }
 
 static void command_read(char *buf);
-static int parse_command(const char *, char *);
+static int parse_command(const char *);
 static int parse_address(const char *, char *, int *, int *);
 static int parse_mm(const char *, char *, int *, int *);
 static void md(int *, int );
@@ -99,9 +99,11 @@ static int parse_cache(const char *, char *);
  */
 int console_cmd(void)
 {
-    char buf[64] = "", cmd[8] = "";
+    char buf[64];
 
 #ifdef CONSOLE_CMD
+input:
+    memset(buf, 0, 64);
     printf("st-boot > ");
     setvbuf(stdin,  NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -109,9 +111,12 @@ int console_cmd(void)
     command_read(buf);
 
     // solve commands
-    if (parse_command(buf, cmd))
+    if (parse_command(buf))
         return -EFAULT;
+    goto input;
 #endif
+
+    kernel_entry(0, 0);
     return 0;
 }
 
@@ -213,8 +218,9 @@ static void command_read(char *buf)
 /*
  * parse command input
  */
-static int parse_command(const char *buf, char *cmd) {
+static int parse_command(const char *buf) {
     int i;
+    char cmd[8] = "";
     int kernel, fdt;
     int address;
     int length, value;
@@ -283,7 +289,6 @@ static int parse_command(const char *buf, char *cmd) {
         // unknown
         pr_info("error: %s: no such a command", buf);
 out:
-    console_cmd();
     return 0;
 }
 
@@ -318,8 +323,8 @@ static void __parse_address(const char *buf, int *idx, int *address)
  */
 static int parse_address(const char *buf, char *cmd, int *kernel, int *fdt) {
     int idx = 0;
-    kernel = 0;
-    fdt = 0;
+    *kernel = 0;
+    *fdt = 0;
 
     if (strlen(buf) < 9)
         return 0;
