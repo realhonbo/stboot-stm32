@@ -15,6 +15,7 @@
 
 #define N_CMD               8
 #define MAX_HISTORY_LINE   32
+#define MAX_CMD_LENGTH     64
 #define CMD_SPACE_L1      "  "
 #define CMD_SPACE_L2      "        "
 
@@ -31,9 +32,9 @@ static char command[N_CMD][8] = {
 
 /** cmd cache */
 struct cc_cache {
-    char *cache[MAX_HISTORY_LINE][64];
-    int ptr;
-    int flag;
+    char cache[MAX_HISTORY_LINE][MAX_CMD_LENGTH];
+    int tail; // after last elem
+    int curr; // elem be read
 };
 
 static struct cc_cache ccache;
@@ -61,27 +62,35 @@ static void parse_cmd_name(const char *buf, char *cmd, int *idx)
 // store command history to cmd_cache
 static void storeto_cmd_cache(const char *buf)
 {
-    if (!(ccache.ptr < MAX_HISTORY_LINE))
-        ccache.ptr = -1;
-    ccache.ptr ++;
-    memcpy(ccache.cache[ccache.ptr], buf, 64);
+    memcpy(ccache.cache[ccache.tail], buf, MAX_CMD_LENGTH);
+    ccache.tail = (ccache.tail + 1) % MAX_HISTORY_LINE;
+    ccache.curr = ccache.tail;
 }
 
-static void load_lastcmd(char *buf)
+static inline void load_lastcmd(char *buf)
 {
-    int i;
-
-    if (ccache.ptr - ccache.flag < 0 ||
-            !ccache.cache[ccache.ptr-ccache.flag][0])
+    ccache.curr --;
+    if (ccache.curr < 0) {
+        ccache.curr = 0;
         return;
-    memcpy(buf, ccache.cache[ccache.ptr-ccache.flag], 64);
-    ccache.flag ++;
+    }
+    memcpy(buf, ccache.cache[ccache.curr], MAX_CMD_LENGTH);
+}
+
+static inline void load_nextcmd(char *buf)
+{
+    ccache.curr ++;
+    if (ccache.curr > ccache.tail) {
+        ccache.curr = ccache.tail;
+        return;
+    }
+    memcpy(buf, ccache.cache[ccache.curr], MAX_CMD_LENGTH);
 }
 
 static void command_read(char *buf);
 static int parse_command(const char *);
 static int parse_address(const char *, char *, int *, int *);
-static int parse_mm(const char *, char *, int *, int *);
+static int parse_mm(const char *, char *, int *, int *, int);
 static void md(int *, int );
 static void mw(int *, int);
 static int parse_cache(const char *, char *);
@@ -96,15 +105,16 @@ static int parse_cache(const char *, char *);
  *        boot  0x90010000 - 0x90000000
  *        <cmd>   <kernel> -    <fdt>
  *
+ ** the other functions will be inline to console_cmd
  */
-int console_cmd(void)
+__itcm int console_cmd(void)
 {
-    char buf[64];
+    char buf[MAX_CMD_LENGTH];
 
 #ifdef CONSOLE_CMD
 input:
-    memset(buf, 0, 64);
-    printf("st-boot > ");
+    memset(buf, 0, MAX_CMD_LENGTH);
+    printf("\033[1;36mst-boot > \033[0m");
     setvbuf(stdin,  NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
 
@@ -125,13 +135,13 @@ input:
  *
  * DEL: Delete key: \033[ ... ~
  *
- * IDX: idx_arrow should be after the character you will change
- *      "ABC<idx_arrow>DEFGH<idx>"
+ * IDX: adx(arrow idx) should be after the character you will change
+ *      "ABC<adx>DEFGH<idx>"
  */
 static void command_read(char *buf)
 {
     int idx = 0;
-    int idx_arrow = idx;
+    int adx = idx;
     int i, len;
     char rc;
 
@@ -142,11 +152,18 @@ static void command_read(char *buf)
     case '\033': // Arrow and DEL
         getchar();
         switch (getchar()) {
-        case 'B':
+        case 'B': // next command
+            for(i = 0; i < strlen(buf); i++)
+                printf("\b \b");
+            load_nextcmd(buf);
+            idx = strlen(buf);
+            adx = idx;
+            printf("%s", buf);
+            break;
         case 'C': // right
-            if (idx_arrow < idx) {
+            if (adx < idx) {
                 printf("\033[C");
-                idx_arrow++;
+                adx++;
             }
             break;
         case 'A': // last command
@@ -154,13 +171,13 @@ static void command_read(char *buf)
                 printf("\b \b");
             load_lastcmd(buf);
             idx = strlen(buf);
-            idx_arrow = idx;
+            adx = idx;
             printf("%s", buf);
             break;
         case 'D': // left
-            if (idx_arrow > 0) {
+            if (adx > 0) {
                 printf("\033[D");
-                idx_arrow--;
+                adx--;
             }
             break;
         default:
@@ -168,13 +185,13 @@ static void command_read(char *buf)
         }
         continue;
     case 127: // Backspace
-        if (idx > 0) {
-            printf("\b \b%s \b", &buf[idx_arrow]);
-            for (i = 0; i < idx - idx_arrow; i++)
+        if (adx > 0) {
+            printf("\b \b%s \b", &buf[adx]);
+            for (i = 0; i < idx - adx; i++)
                 putchar('\b');
-            memmove(&buf[idx_arrow-1], &buf[idx_arrow], idx-idx_arrow);
+            memmove(&buf[adx-1], &buf[adx], idx-adx);
             buf[--idx] = '\0';
-            --idx_arrow;
+            --adx;
         }
         if (!idx) buf[idx] = '\0';
         continue;
@@ -185,30 +202,34 @@ static void command_read(char *buf)
                 printf("%s", command[i]+idx);
                 memcpy(&buf[idx], command[i]+idx, len);
                 idx += len;
-                idx_arrow += len;
+                adx += len;
             }
         }
         continue;
     case '\r': // Enter
         printf("\r\n");
-        storeto_cmd_cache(buf);
-        ccache.flag = 0;
+        if (strlen(buf)) {
+            storeto_cmd_cache(buf);
+            ccache.curr = ccache.tail;
+        }
         return;
     case 3: // ctrl-c
         printf("\r\n");
         memset(buf, 0, strlen(buf));
         return;
     default:
-        printf("%c%s \b", rc, &buf[idx_arrow]);
-        for (i = 0; i < idx - idx_arrow; i++)
+        if (unlikely( !(idx < MAX_CMD_LENGTH) ))
+            break;
+        printf("%c%s \b", rc, &buf[adx]);
+        for (i = 0; i < idx - adx; i++)
             putchar('\b');
         // insert
-        if (idx == idx_arrow) {
+        if (idx == adx) {
             buf[idx++] = rc;
-            idx_arrow++;
+            adx++;
         } else {
-            memmove(&buf[idx_arrow+1], &buf[idx_arrow], idx-idx_arrow);
-            buf[idx_arrow++] = rc;
+            memmove(&buf[adx+1], &buf[adx], idx-adx);
+            buf[adx++] = rc;
             idx++;
         }
     }
@@ -248,7 +269,6 @@ static int parse_command(const char *buf) {
                 println(L2, "md <address> <length>");
                 println(L2, "read CPUID: md e000ed00 1");
                 println(L2, "411fc271");
-                println(L2, "! Both address and length are hex format");
             }
             else if (!strncmp(command[i], "mw", 2)) {
                 println(L2, "mw <address> <value>");
@@ -266,13 +286,13 @@ static int parse_command(const char *buf) {
         printf("\033[2J\033[H");
     else if (!CMD_CMP(3))
     {   // md
-        if (parse_mm(buf, cmd, &address, &length))
+        if (parse_mm(buf, cmd, &address, &length, 0))
             return -EFAULT;
         md((int *)address, length);
     }
     else if (!CMD_CMP(4))
     {   // mw
-        if (parse_mm(buf, cmd, &address, &value))
+        if (parse_mm(buf, cmd, &address, &value, 1))
             return -EFAULT;
         mw((int *)address, value);
     }
@@ -294,26 +314,35 @@ out:
 
 
 /*
- * parse address of `boot`
+ * parse number of `boot`
  */
-static void __parse_address(const char *buf, int *idx, int *address)
+static void __parse_number(const char *buf, int *idx, int *number, int hex)
 {
     int i = *idx;
-    *address = 0;
+    *number = 0;
 
     if (buf[i] == '-') i++;
 
-    if (!strncmp(&buf[i], "0x", 2)) i += 2;
-    while (buf[i] != ' ' && buf[i] != '\0') {
-        if (buf[i] >= '0' && buf[i] <= '9')
-            *address = (*address * 16) + (buf[i] - '0');
-        else if (buf[i] >= 'a' && buf[i] <= 'f')
-            *address = (*address * 16) + (buf[i] - 'a' + 10);
-        else if (buf[i] >= 'A' && buf[i] <= 'F')
-            *address = (*address * 16) + (buf[i] - 'A' + 10);
-        else
-            break; // non-hex character, break out of the loop
-        i++;
+    if (hex) {
+        if (!strncmp(&buf[i], "0x", 2)) i += 2;
+        while (buf[i] != ' ' && buf[i] != '\0') {
+            if (buf[i] >= '0' && buf[i] <= '9')
+                *number = (*number * 16) + (buf[i] - '0');
+            else if (buf[i] >= 'a' && buf[i] <= 'f')
+                *number = (*number * 16) + (buf[i] - 'a' + 10);
+            else if (buf[i] >= 'A' && buf[i] <= 'F')
+                *number = (*number * 16) + (buf[i] - 'A' + 10);
+            else
+                break; // non-hex character, break out of the loop
+            i++;
+        }
+    } else {
+        while (buf[i] != ' ' && buf[i] != '\0') {
+            if (buf[i] < '0' || buf[i] > '9')
+                break;
+            *number = (*number * 10) + (buf[i] - '0');
+            i++;
+        }
     }
     *idx = i;
 }
@@ -334,15 +363,15 @@ static int parse_address(const char *buf, char *cmd, int *kernel, int *fdt) {
 
     // parse kernel address
     while (buf[idx] == ' ') idx++; // skip space
-    __parse_address(buf, &idx, kernel);
+    __parse_number(buf, &idx, kernel, 1);
 
     // no-support rootfs address
     while (buf[idx] == ' ') idx++;
-    __parse_address(buf, &idx, 0);
+    __parse_number(buf, &idx, 0, 1);
 
     // parse fdt address
     while (buf[idx] == ' ') idx++;
-    __parse_address(buf, &idx, fdt);
+    __parse_number(buf, &idx, fdt, 1);
 
     // check if all required fields were parsed
     if (cmd[0] == '\0' || *kernel == 0 || *fdt == 0)
@@ -370,7 +399,7 @@ static void mw(int *address, int value)
     *address = value;
 }
 
-static int parse_mm(const char *buf, char *cmd, int *address, int *length)
+static int parse_mm(const char *buf, char *cmd, int *address, int *length, int hex)
 {
     int idx = 0;
 
@@ -379,11 +408,11 @@ static int parse_mm(const char *buf, char *cmd, int *address, int *length)
 
     // parse address
     while (buf[idx] == ' ') idx++;
-    __parse_address(buf, &idx, address);
+    __parse_number(buf, &idx, address, 1);
 
-    // parse length / value
+    // parse value
     while (buf[idx] == ' ') idx++;
-    __parse_address(buf, &idx, length);
+    __parse_number(buf, &idx, length, hex);
 
     if (length == 0)
         return -EFAULT;

@@ -13,13 +13,11 @@
 #include <memory.h>
 #include <cmsis_gcc.h>
 #include "bsp.h"
-#include "qspi_flash.h"
+#include "qspi-flash.h"
 
 #define RW_SIZE         0x400000    // 测试数据量: Byte
-#define CaculateSpeed   (RW_SIZE / 1000 / (end_time - start_time))
+#define caculate_speed   (RW_SIZE / 1000 / (end_time - start_time))
 
-__IO int *sdram = (int *)SDRAM_BASE_ADDR;
-__IO int *qspi  = (int *)QSPI_FLASH_BASE_ADDR;
 static int start_time, end_time;
 
 static inline void memory_write(__IO int *addr)
@@ -116,17 +114,20 @@ static inline void memory_read(__IO int *addr)
 /**
  * @brief 测试 SDRAM 读写速度 & QSPI-Flash 读速度
  */
-void memory_speed_test(void) {
+__itcm void memory_speed_test(void) {
+    __IO int *sdram = (int *)SDRAM_BASE_ADDR;
+    __IO int *qspi  = (int *)QSPI_FLASH_BASE_ADDR;
+
 /* SDRAM */
     memory_write(sdram);
-    printf("sdram write: %d MB/s\r\n", CaculateSpeed);
+    printf("sdram write: %d MB/s\r\n", caculate_speed);
 
     memory_read(sdram);
-    printf("sdram  read: %d MB/s\r\n", CaculateSpeed);
+    printf("sdram  read: %d MB/s\r\n", caculate_speed);
 
 /* QSPI Flash */
     memory_read(qspi);
-    printf("qspi-flash read: %d MB/s\r\n", CaculateSpeed);
+    printf("qspi-flash read: %d MB/s\r\n", caculate_speed);
 
     printf("\r\n");
 }

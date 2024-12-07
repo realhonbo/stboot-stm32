@@ -11,14 +11,13 @@
 #include <stdio.h>
 #include "bsp.h"
 
-static int stick;
 
 void led_init(void)
 {
     GPIO_InitTypeDef gpio = {0};
     __HAL_RCC_GPIOC_CLK_ENABLE();
+
 /* PC13 for LED */
-    gpio.Pin = GPIO_PIN_13;
     gpio.Pin = GPIO_PIN_13;
     gpio.Mode = GPIO_MODE_OUTPUT_PP;
     gpio.Pull = GPIO_PULLUP;
@@ -27,12 +26,12 @@ void led_init(void)
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, 0);
 
     pr_info("led: gpioc-13 as triggered led");
-
-    stick = HAL_GetTick();
 }
 
 void led_timer_handler(void)
 {
+    static int stick;
+
     if (HAL_GetTick() - stick > LED_BLINK_TIME) {
         HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
         stick = HAL_GetTick();

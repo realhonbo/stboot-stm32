@@ -70,10 +70,8 @@
   
   - `LED_BLINK_TIME`：stboot 启动闪烁间隔（default **50ms**）
   
-  - `LOGO_GENERIC`：更通用的 LOGO 不易乱码
-  
     
-
+  
 - config
 
   - **ST-Boot**：已编译完成的 `stboot.bin` 烧录到 `0x0800_0000`

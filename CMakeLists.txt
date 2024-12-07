@@ -38,6 +38,7 @@ include_directories(
         drivers/STM32H7xx_HAL_Driver/Inc/Legacy
         drivers/CMSIS/Device/ST/STM32H7xx/Include
         drivers/CMSIS/Include
+        src/lib
 # usr
         src
         src/include
@@ -73,6 +74,8 @@ add_custom_command(
         TARGET ${PROJECT_NAME}.elf POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} -Oihex   $<TARGET_FILE:${PROJECT_NAME}.elf> ${HEX_FILE}
         COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${PROJECT_NAME}.elf> ${BIN_FILE}
+        COMMAND ${SIZE} ${PROJECT_NAME}.elf
+        COMMAND powershell -Command "(Get-Item stboot.bin).length / 1KB"
         COMMENT "Building ${HEX_FILE}
         Building ${BIN_FILE}"
 )

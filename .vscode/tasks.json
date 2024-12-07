@@ -3,6 +3,30 @@
     "type": "shell",
     "tasks": [
         {
+            "label": "build",
+            "command": "cmake",
+            "args": [
+                "--build", 
+                "build/"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "copy",
+            "command": "cp",
+            "args": [
+                "build/stboot.bin",
+                "out/bin/stboot.bin"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "dependsOn": "build"
+        },
+        {
             "label": "program->stm32",
             "command": "openocd",
             "args": [
@@ -20,7 +44,7 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": "Build"
-        }
+            "dependsOn": "copy"
+        },
     ]
 }

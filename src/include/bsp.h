@@ -1,7 +1,7 @@
 #ifndef BSP_EASYCONFIG_H
 #define BSP_EASYCONFIG_H
 
-#define STBOOT_VERSION         "2.3.2 (Develop)"
+#define STBOOT_VERSION         "2.3.3 (Develop)"
 
 #define HSE_FREQUENCY          25
 
@@ -16,7 +16,6 @@
  * early print buffer config
  */
 #define EPB_BUF_SIZE           512
-#define LOGO_GENERIC
 
 /*
  * hardware configs
@@ -38,10 +37,15 @@
 
 #define UART_Baudrate           115200
 #define CONSOLE_CMD
-#define LED_BLINK_TIME          50
+#define LED_BLINK_TIME          82
 
 
 
+
+#define __itcm      __attribute__((section(".itcm")))
+#define noinline    __attribute__((noinline))
+#define likely(x)   __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
 
 void sysclk_config(void);
 void mpu_config(void);
@@ -53,9 +57,10 @@ void Error_Handler(char *, int);
 void console_init(void);
 void error_print(void);
 void pr_info(const char *, ...);
-int console_cmd(void);
+int  console_cmd(void);
 
 void kernel_entry(int, int);
 
 void memory_speed_test(void);
+
 #endif

@@ -3,7 +3,7 @@
 #include <memory.h>
 #include <cmsis_gcc.h>
 #include "bsp.h"
-#include "qspi_flash.h"
+#include "qspi-flash.h"
 #include "errno.h"
 
 
@@ -11,7 +11,7 @@
  * move vector_table from flash to DTCM
  * and fast instructions to ITCM
  */
-static void remap_ivt_to_tcm(void)
+static void copy_to_tcm(void)
 {
     extern char _isr_start, _isr_size,
     _itcm_start, _itcm_size, _itcm_at_start;
@@ -23,7 +23,7 @@ static void remap_ivt_to_tcm(void)
     memcpy(&_itcm_start, &_itcm_at_start, (int)(&_itcm_size));
 
     __enable_irq();
-    pr_info("vector: vectors -> DTCM 0x%08x, .itcm -> ITCM 0x%08x", &_isr_start, &_itcm_start);
+    pr_info("tcm: vectors -> dtcm 0x%08x, .itcm -> itcm 0x%08x", &_isr_start, &_itcm_start);
 }
 
 /**
@@ -69,7 +69,8 @@ int main(void) {
     // config system clock
     HAL_Init();
     sysclk_config();
-    ////remap_ivt_to_tcm();
+    copy_to_tcm();
+
     // mpu setup
     mpu_config();
     SCB_EnableICache();
