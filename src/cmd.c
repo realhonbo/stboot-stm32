@@ -7,23 +7,26 @@
  * @copyright Copyright (rc) 2024
  * 
  */
+#include <stm32h7xx_hal.h>
 #include <stdio.h>
 #include <string.h>
 #include "bsp.h"
 #include "errno.h"
 
-#define N_CMD               6
+#define N_CMD               8
 #define MAX_HISTORY_LINE   32
-#define CMD_SPACE_L1   "    "
-#define CMD_SPACE_L2   "        "
+#define CMD_SPACE_L1      "  "
+#define CMD_SPACE_L2      "        "
 
 static char command[N_CMD][8] = {
         "boot",
         "help",
         "clear",
         "md",
-        "mtest",
-        "info",
+        "mw",
+        "mtest", /* mem test */
+        "cache", /* cache control */
+        "version",
 };
 
 /** cmd cache */
@@ -78,8 +81,10 @@ static void load_lastcmd(char *buf)
 static void command_read(char *buf);
 static int parse_command(const char *, char *);
 static int parse_address(const char *, char *, int *, int *);
-static int parse_md(const char *, char *, int *, int *);
+static int parse_mm(const char *, char *, int *, int *);
 static void md(int *, int );
+static void mw(int *, int);
+static int parse_cache(const char *, char *);
 
 /**
  * console command
@@ -114,6 +119,9 @@ int console_cmd(void)
  ** read command to buffer
  *
  * DEL: Delete key: \033[ ... ~
+ *
+ * IDX: idx_arrow should be after the character you will change
+ *      "ABC<idx_arrow>DEFGH<idx>"
  */
 static void command_read(char *buf)
 {
@@ -140,6 +148,8 @@ static void command_read(char *buf)
             for(i = 0; i < strlen(buf); i++)
                 printf("\b \b");
             load_lastcmd(buf);
+            idx = strlen(buf);
+            idx_arrow = idx;
             printf("%s", buf);
             break;
         case 'D': // left
@@ -159,7 +169,7 @@ static void command_read(char *buf)
                 putchar('\b');
             memmove(&buf[idx_arrow-1], &buf[idx_arrow], idx-idx_arrow);
             buf[--idx] = '\0';
-            idx_arrow--;
+            --idx_arrow;
         }
         if (!idx) buf[idx] = '\0';
         continue;
@@ -178,6 +188,10 @@ static void command_read(char *buf)
         printf("\r\n");
         storeto_cmd_cache(buf);
         ccache.flag = 0;
+        return;
+    case 3: // ctrl-c
+        printf("\r\n");
+        memset(buf, 0, strlen(buf));
         return;
     default:
         printf("%c%s \b", rc, &buf[idx_arrow]);
@@ -201,50 +215,74 @@ static void command_read(char *buf)
  */
 static int parse_command(const char *buf, char *cmd) {
     int i;
-    int kernel = 0, fdt = 0;
-    int address, length;
+    int kernel, fdt;
+    int address;
+    int length, value;
 
-    if (!strlen(buf) || !CMD_CMP(0))
-    { // boot
+    if (!strlen(buf))
+        goto out;
+
+    if (!CMD_CMP(0))
+    {   // boot
         if(parse_address(buf, cmd, &kernel, &fdt))
             return -EFAULT;
         kernel_entry(kernel, fdt);
         return 0;
     }
     else if (!CMD_CMP(1))
-    { // help
+    {   // help
         printf("support command:\r\n");
         for (i = 0; i < N_CMD; i++) {
             println(L1, command[i]);
-            if (!strncmp(command[i], "boot", 4))
+            if (!strncmp(command[i], "boot", 4)) {
                 println(L2, "boot <kernel address> - <fdt address>");
+                println(L2, "use default address: boot ");
+            }
             else if (!strncmp(command[i], "md", 2)) {
-                println(L2, "md <address>  <length>");
+                println(L2, "md <address> <length>");
                 println(L2, "read CPUID: md e000ed00 1");
                 println(L2, "411fc271");
                 println(L2, "! Both address and length are hex format");
+            }
+            else if (!strncmp(command[i], "mw", 2)) {
+                println(L2, "mw <address> <value>");
+            }
+            else if (!strncmp(command[i], "cache", 5)) {
+                println(L2, "cache <name> <op>");
+                println(L2, "disable icache: cache i 0");
+                println(L2, "invalid dcache: cache d i");
             }
         }
         printf("\r\n");
     }
     else if (!CMD_CMP(2))
-    { // clear
+        // clear
         printf("\033[2J\033[H");
-    }
     else if (!CMD_CMP(3))
-    { // md
-        if (parse_md(buf, cmd, &address, &length))
+    {   // md
+        if (parse_mm(buf, cmd, &address, &length))
             return -EFAULT;
         md((int *)address, length);
     }
     else if (!CMD_CMP(4))
-    {
+    {   // mw
+        if (parse_mm(buf, cmd, &address, &value))
+            return -EFAULT;
+        mw((int *)address, value);
+    }
+    else if (!CMD_CMP(5)) 
+        // mtest
         memory_speed_test();
-    }
+    else if (!CMD_CMP(6))
+        // cache
+        parse_cache(buf, cmd);
+    else if (!CMD_CMP(7))
+        // version
+        printf("st-boot %s\r\n", STBOOT_VERSION);
     else
-    { // unknown
+        // unknown
         pr_info("error: %s: no such a command", buf);
-    }
+out:
     console_cmd();
     return 0;
 }
@@ -256,6 +294,7 @@ static int parse_command(const char *buf, char *cmd) {
 static void __parse_address(const char *buf, int *idx, int *address)
 {
     int i = *idx;
+    *address = 0;
 
     if (buf[i] == '-') i++;
 
@@ -279,6 +318,8 @@ static void __parse_address(const char *buf, int *idx, int *address)
  */
 static int parse_address(const char *buf, char *cmd, int *kernel, int *fdt) {
     int idx = 0;
+    kernel = 0;
+    fdt = 0;
 
     if (strlen(buf) < 9)
         return 0;
@@ -305,7 +346,7 @@ static int parse_address(const char *buf, char *cmd, int *kernel, int *fdt) {
 }
 
 /**
- * memory display
+ * memory display and write
  */
 static void md(int *address, int length)
 {
@@ -319,7 +360,12 @@ static void md(int *address, int length)
     printf("\r\n");
 }
 
-static int parse_md(const char *buf, char *cmd, int *address, int *length)
+static void mw(int *address, int value)
+{
+    *address = value;
+}
+
+static int parse_mm(const char *buf, char *cmd, int *address, int *length)
 {
     int idx = 0;
 
@@ -330,11 +376,61 @@ static int parse_md(const char *buf, char *cmd, int *address, int *length)
     while (buf[idx] == ' ') idx++;
     __parse_address(buf, &idx, address);
 
-    // parse length
+    // parse length / value
     while (buf[idx] == ' ') idx++;
     __parse_address(buf, &idx, length);
 
     if (length == 0)
         return -EFAULT;
     return 0;
+}
+
+/* cache control */
+static int parse_cache(const char *buf, char *cmd)
+{
+    int idx = 0;
+    char c;
+    char status;
+
+    parse_cmd_name(buf, cmd, &idx);
+
+    // parse i / d
+    while (buf[idx] == ' ') idx++;
+    c = buf[idx++];
+
+    // parse status: 0=(ASCII)48  i=(ASCII)105
+    while (buf[idx] == ' ') idx++;
+    status = buf[idx];
+
+    if (c == 'i') 
+    {
+        if (status == 105) {
+            SCB_InvalidateICache();
+            printf("cache: icache invalid\r\n");
+        } else if (status == 48) {
+            SCB_DisableICache();
+            printf("cache: icache disabled\r\n");
+        } else {
+            SCB_EnableICache();
+            printf("cache: icache enabled\r\n");
+        }
+        return 0;
+    }
+    else if (c == 'd')
+    {
+        if (status == 105) {
+            SCB_InvalidateDCache();
+            printf("cache: dcache invalid\r\n");
+        }else if (status == 48) {
+            SCB_DisableDCache();
+            printf("cache: dcache disabled\r\n");
+        } else {
+            SCB_EnableDCache();
+            printf("cache: dcache enabled\r\n");
+        }
+        return 0;
+    }
+
+    pr_info("error: no command arg %c", c);
+    return -EFAULT;
 }

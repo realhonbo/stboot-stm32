@@ -118,25 +118,15 @@ static inline void memory_read(__IO int *addr)
  */
 void memory_speed_test(void) {
 /* SDRAM */
-    SCB_DisableDCache();
     memory_write(sdram);
-    printf("no-cache: sdram write: %d MB/s\r\n", CaculateSpeed);
-    memory_read(sdram);
-    printf("no-cache: sdram  read: %d MB/s\r\n", CaculateSpeed);
+    printf("sdram write: %d MB/s\r\n", CaculateSpeed);
 
-    SCB_EnableDCache();
-    memory_write(sdram);
-    printf(" d-cache: sdram write: %d MB/s\r\n", CaculateSpeed);
     memory_read(sdram);
-    printf(" d-cache: sdram  read: %d MB/s\r\n", CaculateSpeed);
+    printf("sdram  read: %d MB/s\r\n", CaculateSpeed);
 
 /* QSPI Flash */
-    SCB_DisableDCache();
     memory_read(qspi);
-    printf("no-cache: qspi-flash read: %d MB/s\r\n", CaculateSpeed);
+    printf("qspi-flash read: %d MB/s\r\n", CaculateSpeed);
 
-    SCB_EnableDCache();
-    memory_read(qspi);
-    printf(" d-cache: qspi-flash read: %d MB/s\r\n", CaculateSpeed);
     printf("\r\n");
 }
