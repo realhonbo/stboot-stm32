@@ -1,284 +1,96 @@
 <p align="center">
   <a>
-    <img src=".vscode/.pic/stboot_v2.0.png"  width="860" height="450">
+    <img src=".vscode/.pic/stboot_v2.0.png"  width="716" height="375">
   </a>
 </p>
 
 
-> stm32 bootloader for linux, base on HAL library, easy for you to customize functions
-- 当前支持的硬件设备
 
-  - **STM32H7**-FK（反客科技）
-    - `MCU`   *STM32H743*   *STM32H750*
-    
-    - `SDRAM`   *W9825G6KH-6I*
-    - `QSPI-Flash`   *W25Q64*
-    - `LCD`   *ST7789V - 240 x 320*
+> *stm32 bootloader for linux, base on hal library, easy for you to customize functions*
+- **Boards Support**
 
-
-
-- 编译平台
-
-  - **WSL2：Ubuntu22.04**
-
-    > Ubuntu 中使用 *arm-none-eabi-gcc* 交叉编译 kernel 和 buildroot
-    >
-    > 请使用 *arm-none-eabi-gcc-10.3.1* 及以上版本，否则内核有可能无法识别 Cortex-M7 的 cpuid
-    
-  - **Windows 11**（可选）
-
-    > 编译 stboot
-    >
-    > 注意修改 cmake 路径 与 mcu 型号
-    
-    ```cmake
-    5:  set(TOOLCHAIN_PATH         B:/arm-gnu-toolchain ) #! toolchain location
-    ```
-    
-    ```cmake
-    44: add_definitions(-DUSE_HAL_DRIVER -DSTM32H743xx) #! H743
-    ```
+  | Board                | MCU           | SDRAM        | QSPI-Flash | LCD                 |
+  | -------------------- | ------------- | ------------ | ---------- | ------------------- |
+  | FK743M5（Fank-Tech） | STM32H743XIH6 | W9825G6KH-6I | W25Q64     | ST7789V - 240 x 320 |
+  |                      |               |              |            |                     |
+  
 
 
 
-- 启动行为
-  - 配置  Cache 对于 内存 和 Flash 的读写策略：`mpu_config`
-  - 系统时钟设定为 480 MHz：`sysclk_config`
-  - 启用串口 1 作为输出： `console_init`
-  - 配置 QSPI-Flash 并开启 XIP 模式：`QSPI_W25Qxx_Init` `QSPI_W25Qxx_MMMode`
-  - 启用 SDRAM：`sdram_init`
-  - 关闭 DCache 与中断，跳转到内核：`kernel_entry`
+
+- **Compile options configure**
+
+  ```cmake
+  5:  set(TOOLCHAIN_PATH B:/arm-gnu-toolchain ) #! toolchain location
+  ```
+
+  ```cmake
+  44: add_definitions(-DUSE_HAL_DRIVER -DSTM32H743xx) #! H743
+  ```
 
 
 
-- 简单配置
-  - fcpu 建议配置：
+- **Board Config**
+  
+  - fcpu config：
   
     > **480MHz**（*BogoMIPS*  240）：`SYSCLK_PLL_N = 192`，`SYSCLK_PLL_M = 5`
     >
     > **550MHz**（*BogoMIPS*  275）：`SYSCLK_PLL_N = 88`，`SYSCLK_PLL_M = 2`
   
-  - `EPB_BUF_SIZE`：early print 缓冲区大小（default to 512B ）
+  - `EPB_BUF_SIZE`：size of buffer for early print （default to 512B）
   
-  - `USE_SRAM_D2` `USE_SRAM_D3`：是否使用 288KB + 64KB 的 D2 D3 域 SRAM
+  - `USE_SRAM_D2` `USE_SRAM_D3`：use SRAM in D2（288KB）and D3（64KB）
   
-  - `FDT_ADDR` `FDT_SIZE`：设备树基地址 和 容量大小（default 64KB，a Flash Block）
+  - `FDT_ADDR` `FDT_SIZE`：the base address and size of fdt（default 64KB，a Flash Block）
   
-  - `KERNEL_ADDR`：内核基地址 = `FDT_ADDR` + `FDT_SIZE`
+  - `KERNEL_ADDR`：base address of kernel = `FDT_ADDR` + `FDT_SIZE`
   
-  - `UART_Baudrate`：串口波特率（default **115200** bps）
+  - `UART_Baudrate`：default **115200** bps
   
-  - `LED_BLINK_TIME`：stboot 启动闪烁间隔（default **50ms**）
+  - `CONSOLE_CMD`：whether use command console
   
-    
-  
-- config
-
-  - **ST-Boot**：已编译完成的 `stboot.bin` 烧录到 `0x0800_0000`
-
-  - **FDT**：将 `stm32h743i-disco.dtb.bin` 烧录到 `0x9000_0000`
+  - `LED_BLINK_TIME`：the blink interval of LED（default **82ms**）
   
     
   
-  - **内核与文件系统**
+- **Program**
+
+  - `stboot.bin` -> `0x0800_0000`
+
+  - `stm32h743i-disco.dtb.bin` -> `0x9000_0000`
   
-    > User Name：`root`
+  - `xipImage.bin` -> `0x9001_0000`
+  
+    > User Name:	**root**
     >
-    > Passwd：`0`
-  
-    - 【方式一】`xipImage.bin` 是已经和 `rootfs.cpio.gz` 编译为一体的内核镜像，烧录到 `0x9001_0000`
-  
-      > 采用 initramfs 方式，文件系统存在于 ram，操作也不具有记忆性断电后消失
-  
-    - 【方式二】采用 sdmmc，将编译好的文件系统 `config/buildroot/rootfs_mmc.tar.gz` 解压并写入 tf 卡
-  
-      > 文件系统存在于 sdmmc，具备持久性
-  
-    
-  
-  - 烧录完成并复位后，stboot 与内核的启动信息如下
+    > Passwd:		**0**
   
     ```shell
-    -----------_______________  ____  ____  ______  
-       -------/ ___/_  __/ __ )/ __ \/ __ \/_  __/
-         -----\__ \ / / / __  / / / / / / / / /   
-       ------___/ // / / /_/ / /_/ / /_/ / / /      
-    --------/____//_/ /_____/\____/\____/ /_/     
+    ----------- _______________  ____  ____  ______  
+       ------- / ___/_  __/ __ )/ __ \/ __ \/_  __/
+          ---- \__ \ / / / __  / / / / / / / / /   
+       ------ ___/ // / / /_/ / /_/ / /_/ / / /      
+    -------- /____//_/ /_____/\____/\____/ /_/     
     
     [    0.000003] sysclk: system clock configured, CPU 480MHz
-    [    0.000078] vector: vectors -> DTCM 0x20000000, .itcm -> ITCM 0x00001000
-    [    0.000147] mpu: mem 0x24000000 setup, size 512KB
-    [    0.000207] mpu: mem 0xc0000000 setup, size 32MB
-    [    0.000266] mpu: mem 0x08000000 setup, size 2MB
-    [    0.000326] mpu: mem 0x90000000 setup, size 8MB
-    [    0.052492] tty: uart1 init success
-    [    0.056001] led: gpioc-13 as triggered led
-    [    0.060125] flash: w25q64 flash ( ID:EF4017 ) init success
+    [    0.000085] tcm: vectors -> dtcm 0x20000000, .itcm -> itcm 0x00001000
+    [    0.000157] mpu: mem 0x24000000 setup, size 512KB
+    [    0.000219] mpu: mem 0xc0000000 setup, size 32MB
+    [    0.000281] mpu: mem 0x08000000 setup, size 2MB
+    [    0.000341] mpu: mem 0x90000000 setup, size 8MB
+    [    0.052661] tty: uart1 init success
+    [    0.056168] led: gpioc-13 as triggered led
+    [    0.060292] flash: w25q64 flash ( ID:EF4017 ) init success
     [    0.067001] sdram: configure success
     st-boot > boot 90010000 - 90000000
-    [   25.550953] boot: kernel addr: 0x90010000, fdt addr: 0x90000000
-    [   25.556904] 
-    [   25.558403] boot: ready to boot kernel ...
-    [   25.562521] 
-    [    0.000000] Booting Linux on physical CPU 0x0
-    [    0.000000] Linux version 6.12.0 (boboo@Linux01) (arm-none-eabi-gcc (15:10.3-2021.07-4) 10.3.1 20210621 (release), GNU ld (2.38-3ubuntu1+15build1) 2.38) #115 Tue Dec  3 00:31:02 CST 2024
-    [    0.000000] CPU: ARMv7-M [411fc271] revision 1 (ARMv7M), cr=00000000
-    [    0.000000] CPU: PIPT / VIPT nonaliasing data cache, PIPT instruction cache
-    [    0.000000] OF: fdt: Machine model: STMicroelectronics STM32H743i-FK (反客科技)
-    [    0.000000] printk: legacy bootconsole [earlycon0] enabled
-    [    0.000000] printk: debug: ignoring loglevel setting.
-    [    0.000000] Reserved memory: created DMA memory pool at 0xc1f00000, size 1 MiB
-    [    0.000000] OF: reserved mem: initialized node linux,cma, compatible id shared-dma-pool
-    [    0.000000] OF: reserved mem: 0xc1f00000..0xc1ffffff (1024 KiB) nomap non-reusable linux,cma
-    [    0.000000] Zone ranges:
-    [    0.000000]   Normal   [mem 0x00000000c0000000-0x00000000c1ffffff]
-    [    0.000000] Movable zone start for each node
-    [    0.000000] Early memory node ranges
-    [    0.000000]   node   0: [mem 0x00000000c0000000-0x00000000c1efffff]
-    [    0.000000]   node   0: [mem 0x00000000c1f00000-0x00000000c1ffffff]
-    [    0.000000] Initmem setup node 0 [mem 0x00000000c0000000-0x00000000c1ffffff]
-    [    0.000000] pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
-    [    0.000000] pcpu-alloc: [0] 0 
-    [    0.000000] Kernel command line: console=tty0 console=ttySTM0,115200n8 earlyprintk ignore_loglevel
-    [    0.000000]      root=/dev/mmcblk0 rw rootwait panic=10
-    [    0.000000] Dentry cache hash table entries: 4096 (order: 2, 16384 bytes, linear)
-    [    0.000000] Inode-cache hash table entries: 2048 (order: 1, 8192 bytes, linear)
-    [    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 8192
-    [    0.000000] allocated 32768 bytes of page_ext
-    [    0.000000] mem auto-init: stack:off, heap alloc:off, heap free:off
-    [    0.000000] SLUB: HWalign=32, Order=0-1, MinObjects=0, CPUs=1, Nodes=1
-    [    0.000000] Invalid parameters for execmem allocator, module loading will fail
-    [    0.000000] NR_IRQS: 16, nr_irqs: 16, preallocated irqs: 16
-    [    0.000000] /soc/interrupt-controller@58000000: bank0
-    [    0.000000] /soc/interrupt-controller@58000000: bank1
-    [    0.000000] /soc/interrupt-controller@58000000: bank2
-    [    0.000000] clocksource: arm_system_timer: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 29863442 ns
-    [    0.000000] ARM System timer initialized as clocksource
-    [    0.000086] sched_clock: 32 bits at 120MHz, resolution 8ns, wraps every 17895697403ns
-    [    0.016343] timer@40000c00: STM32 sched_clock registered
-    [    0.027213] Switching to timer-based delay loop, resolution 8ns
-    [    0.039268] timer@40000c00: STM32 delay timer registered
-    [    0.050152] clocksource: timer@40000c00: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 15927170388 ns
-    [    0.070407] /soc/timer@40000c00: STM32 clockevent driver initialized (32 bits)
-    [    0.088995] Console: colour dummy device 80x30
-    [    0.098923] printk: legacy console [tty0] enabled
-    [    0.113567] Calibrating delay loop (skipped), value calculated using timer frequency.. 240.00 BogoMIPS (lpj=1200000)
-    [    0.135782] pid_max: default: 4096 minimum: 301
-    [    0.146424] Mount-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
-    [    0.162353] Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
-    [    0.217279] Memory: 30432K/32768K available (2973K kernel code, 413K rwdata, 1548K rodata, 86K init, 123K bss, 2024K reserved, 0K cma-reserved)
-    [    0.252778] devtmpfs: initialized
-    [    0.325180] DMA: default coherent area is set
-    [    0.335314] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 19112604462750000 ns
-    [    0.356928] pinctrl core: initialized pinctrl subsystem
-    [    0.401458] cpuidle: using governor menu
-    [    0.518725] stm32h743-pinctrl soc:pinctrl@58020000: GPIOA bank added
-    [    0.541889] stm32h743-pinctrl soc:pinctrl@58020000: GPIOB bank added
-    [    0.565491] stm32h743-pinctrl soc:pinctrl@58020000: GPIOC bank added
-    [    0.589794] stm32h743-pinctrl soc:pinctrl@58020000: GPIOD bank added
-    [    0.613650] stm32h743-pinctrl soc:pinctrl@58020000: GPIOE bank added
-    [    0.637569] stm32h743-pinctrl soc:pinctrl@58020000: GPIOF bank added
-    [    0.661426] stm32h743-pinctrl soc:pinctrl@58020000: GPIOG bank added
-    [    0.687124] stm32h743-pinctrl soc:pinctrl@58020000: GPIOH bank added
-    [    0.711750] stm32h743-pinctrl soc:pinctrl@58020000: GPIOI bank added
-    [    0.737940] stm32h743-pinctrl soc:pinctrl@58020000: GPIOJ bank added
-    [    0.762334] stm32h743-pinctrl soc:pinctrl@58020000: GPIOK bank added
-    [    0.776696] stm32h743-pinctrl soc:pinctrl@58020000: Pinctrl STM32 initialized
-    [    0.862886] stm32-dma 40020000.dma-controller: STM32 DMA driver registered
-    [    0.916045] stm32-mdma 52000000.dma-controller: STM32 MDMA driver registered
-    [    0.942016] SCSI subsystem initialized
-    [    0.954440] usbcore: registered new interface driver usbfs
-    [    0.968182] usbcore: registered new interface driver hub
-    [    0.981634] usbcore: registered new device driver usb
-    [    1.027189] clocksource: Switched to clocksource timer@40000c00
-    [    1.365817] workingset: timestamp_bits=30 max_order=13 bucket_order=0
-    [    1.386035] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 251)
-    [    1.402458] io scheduler mq-deadline registered
-    [    1.412735] io scheduler kyber registered
-    [    1.422214] io scheduler bfq registered
-    [    1.482703] STM32 USART driver initialized
-    [    1.499866] stm32-usart 40011000.serial: interrupt mode for rx (no dma)
-    [    1.514729] stm32-usart 40011000.serial: interrupt mode for tx (no dma)
-    [    1.536271] 40011000.serial: ttySTM0 at MMIO 0x40011000 (irq = 39, base_baud = 7500000) is a stm32-usart
-    [    1.558133] printk: legacy console [ttySTM0] enabled
-    [    1.558133] printk: legacy console [ttySTM0] enabled
-    [    1.579291] printk: legacy bootconsole [earlycon0] disabled
-    [    1.579291] printk: legacy bootconsole [earlycon0] disabled
-    [    1.636150] brd: module loaded
-    [    1.674681] spi_stm32 40015000.spi: driver initialized (host mode)
-    [    1.695509] dwc2 40080000.usb: supply vusb_d not found, using dummy regulator
-    [    1.711379] dwc2 40080000.usb: supply vusb_a not found, using dummy regulator
-    [    1.840537] dwc2 40080000.usb: dwc2_wait_for_mode: Couldn't set host mode
-    [    1.855306] dwc2 40080000.usb: dwc2_check_params: Invalid parameter host_perio_tx_fifo_size=96
-    [    1.981788] dwc2 40080000.usb: dwc2_wait_for_mode: Couldn't set host mode
-    [    1.995164] dwc2 40080000.usb: DWC OTG Controller
-    [    2.004254] dwc2 40080000.usb: new USB bus registered, assigned bus number 1
-    [    2.018343] dwc2 40080000.usb: irq 41, io mem 0x40080000
-    [    2.033243] usb usb1: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 6.12
-    [    2.048443] usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-    [    2.062586] usb usb1: Product: DWC OTG Controller
-    [    2.071867] usb usb1: Manufacturer: Linux 6.12.0 dwc2_hsotg
-    [    2.083152] usb usb1: SerialNumber: 40080000.usb
-    [    2.103336] hub 1-0:1.0: USB hub found
-    [    2.110960] hub 1-0:1.0: 1 port detected
-    [    2.133057] usbcore: registered new interface driver usb-storage
-    [    2.146581] usbcore: registered new interface driver usbserial_generic
-    [    2.159092] usbserial: USB Serial support registered for generic
-    [    2.170959] usbcore: registered new interface driver ch341
-    [    2.181826] usbserial: USB Serial support registered for ch341-uart
-    [    2.204660] hid: raw HID events driver (C) Jiri Kosina
-    [    2.216116] usbcore: registered new interface driver usbhid
-    [    2.225738] usbhid: USB HID core driver
-    [    2.233352] SPI driver fb_st7789v has no spi_device_id for sitronix,st7789v
-    [    2.248910] fb_st7789v spi0.0: fbtft_property_value: buswidth = 16
-    [    2.259929] fb_st7789v spi0.0: fbtft_property_value: debug = 0
-    [    2.271267] fb_st7789v spi0.0: fbtft_property_value: rotate = 90
-    [    2.283292] fb_st7789v spi0.0: fbtft_property_value: fps = 60
-    [    2.298368] fb_st7789v spi0.0: no default functions for regwidth=8 and buswidth=16
-    [    2.345151] mmci-pl18x 52007000.mmc: mmc0: PL180 manf 53 rev1 at 0x52007000 irq 42,0 (pio)
-    [    2.568398] mmc0: host does not support reading read-only switch, assuming write-enable
-    [    2.601304] mmc0: new high speed SDHC card at address 5048
-    [    2.622457] Console: switching to colour frame buffer device 40x30
-    [    2.641509] mmcblk0: mmc0:5048 SD32G 29.7 GiB
-    [    2.711281] graphics fb0: fb_st7789v frame buffer, 320x240, 150 KiB video memory, 4 KiB buffer memory, fps=100, spi0.0 at 60 MHz
-    [    2.758827]  cs_system_cfg: CoreSight Configuration manager initialised
-    [    3.046120] clk: Disabling unused clocks
-    [    4.775046] usb 1-1: new full-speed USB device number 2 using dwc2
-    [    5.019529] usb 1-1: not running at top speed; connect to a high speed hub
-    [    5.109548] usb 1-1: New USB device found, idVendor=090c, idProduct=1000, bcdDevice=11.00
-    [    5.137419] usb 1-1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-    [    5.158924] usb 1-1: Product: U330
-    [    5.168224] usb 1-1: Manufacturer: aigo
-    [    5.183052] usb 1-1: SerialNumber: 0114510358295192
-    [    5.295633] usb-storage 1-1:1.0: USB Mass Storage device detected
-    [    5.369855] scsi host0: usb-storage 1-1:1.0
-    [    6.782780] usb 1-1: reset full-speed USB device number 2 using dwc2
-    [    7.322208] scsi 0:0:0:0: Direct-Access     aigo     U330             1100 PQ: 0 ANSI: 6
-    [    7.433748] sd 0:0:0:0: Attached scsi generic sg0 type 0
-    [    8.254187] EXT4-fs (mmcblk0): recovery complete
-    [    8.279262] EXT4-fs (mmcblk0): mounted filesystem 30a9e076-6442-45c9-aea0-64ae2845ef0e r/w with ordered data mode. Quota mode: disabled.
-    [    8.319791] VFS: Mounted root (ext4 filesystem) on device 179:0.
-    [    8.363730] devtmpfs: mounted
-    [    8.373953] Freeing unused kernel image (initmem) memory: 16K
-    [    8.393316] This architecture does not have kernel memory protection.
-    [    8.413899] Run /sbin/init as init process
-    [    8.430306]   with arguments:
-    [    8.438954]     /sbin/init
-    [    8.446347]   with environment:
-    [    8.455242]     HOME=/
-    [    8.462538]     TERM=linux
-    [    8.750208] EXT4-fs (mmcblk0): re-mounted 30a9e076-6442-45c9-aea0-64ae2845ef0e r/w. Quota mode: disabled.
-    Seeding 256 bits without crediting
-    Saving 256 bits of non-creditable seed for next boot
-    Running sysctl: OK
-    Starting mdev... OK
-    modprobe: invalid option -- a
-    [   76.588258] random: crng init done
+    [    0.070592] boot: kernel addr: 0x90010000, fdt addr: 0x90000000
+    [    0.076539] 
+    [    0.078035] boot: ready to boot kernel ...
+    [    0.082149]
     
-    Welcome to Buildroot
-    user login: root
-    Password: 
-    Jan  1 00:00:19 login [47]: root login on 'console'
+    ... ...(kernel booting message)
+    
     ~ # uname -a
     Linux user 6.12.0 #3 Sun Nov 24 20:40:54 CST 2024 armv7ml GNU/Linux
     ~ # cat /proc/meminfo 
