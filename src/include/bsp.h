@@ -1,7 +1,7 @@
 #ifndef BSP_EASYCONFIG_H
 #define BSP_EASYCONFIG_H
 
-#define STBOOT_VERSION         "2.3.3 (stable)"
+#define STBOOT_VERSION         "2.4.0 (develop)"
 
 #define HSE_FREQUENCY          25
 
@@ -57,7 +57,7 @@ void Error_Handler(char *, int);
 void console_init(void);
 void error_print(void);
 void pr_info(const char *, ...);
-int  console_cmd(void);
+void console_cmd(void);
 
 void kernel_entry(int, int);
 

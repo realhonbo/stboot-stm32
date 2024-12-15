@@ -52,7 +52,20 @@
   
   - `LED_BLINK_TIME`：the blink interval of LED（default **82ms**）
   
-    
+  
+  
+  
+- **Shell**
+  
+  > add a new command
+  
+  ```c
+  void help_newcmd(void) { ... }
+  int do_newcmd(const char *buf) { ... }
+  SHELL_EXPORT_CMD(newcmd, help_newcmd, do_newcmd);
+  ```
+  
+  
   
 - **Program**
 

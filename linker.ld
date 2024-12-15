@@ -32,6 +32,12 @@ SECTIONS
         . = ALIGN(4);  _etext = .;
     } >FLASH
 
+    .shell_cmd : {
+        _shell_cmd_start = .;
+        KEEP(*(.shell_cmd))
+        _shell_cmd_end = .;
+    } >FLASH
+
     .itcm : {
        . = ALIGN(4);  _itcm_start = .;
        KEEP(*(.itcm))

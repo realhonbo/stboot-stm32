@@ -78,12 +78,7 @@ void pr_info(const char *fmt, ...)
 
     va_start(args, fmt);
 
-    if (likely(!ebuf.flag)) {
-        printf("[%12.6f] ", current());
-        vprintf(fmt, args);
-        printf("\r\n");
-    } else {
-        // early print before console init
+    if (unlikely(ebuf.flag)) {
         sprintf(curr, "[%12.6f] ", current());
         vasiprintf(&buf, fmt, args);
 
@@ -97,8 +92,14 @@ void pr_info(const char *fmt, ...)
 
         ebuf.buffer[ebuf.ptr++] = '\0';
         free(buf);
+        goto end;
     }
 
+    printf("[%12.6f] ", current());
+    vprintf(fmt, args);
+    printf("\r\n");
+
+end:
     va_end(args);
 }
 
