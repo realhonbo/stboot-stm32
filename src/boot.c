@@ -8,8 +8,7 @@
 
 
 /*
- * move vector_table from flash to DTCM
- * and fast instructions to ITCM
+ * move vector_table and fast instructions to ITCM
  */
 static void copy_to_tcm(void)
 {
@@ -23,7 +22,8 @@ static void copy_to_tcm(void)
     memcpy(&_itcm_start, &_itcm_at_start, (int)(&_itcm_size));
 
     __enable_irq();
-    pr_info("tcm: vectors -> dtcm 0x%08x, .itcm -> itcm 0x%08x", &_isr_start, &_itcm_start);
+    pr_info("tcm: vectors -> 0x%08x, .itcm -> 0x%08x",
+            &_isr_start, &_itcm_start);
 }
 
 /**

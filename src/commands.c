@@ -17,19 +17,6 @@
 
 extern struct cmd *head;
 
-// get name from buf to cmd
-static void parse_cmd_name(const char *buf, char *cmd, int *idx)
-{
-    int i = *idx;
-
-    while (buf[i] != ' ' && buf[i] != '\0') {
-        cmd[i] = buf[i];
-        i++;
-    }
-    cmd[i] = '\0';
-    *idx = i;
-}
-
 /*
  * parse number of `boot`
  */
@@ -68,7 +55,6 @@ static void __parse_number(const char *buf, int *idx, int *number, int hex)
  * instead of: sscanf(buf, "%s %x - %x", cmd, &kernel, &fdt) != 3
  */
 static int parse_address(const char *buf, int *kernel, int *fdt) {
-    char cmd[8] = "";
     int idx = 0;
     *kernel = 0;
     *fdt = 0;
@@ -76,8 +62,9 @@ static int parse_address(const char *buf, int *kernel, int *fdt) {
     if (strlen(buf) < 9)
         return 0;
 
-    // parse command
-    parse_cmd_name(buf, cmd, &idx);
+    // jump over name
+    while (buf[idx] != ' ' && buf[idx] != '\0') 
+        idx ++;
 
     // parse kernel address
     while (buf[idx] == ' ') idx++; // skip space
@@ -92,7 +79,7 @@ static int parse_address(const char *buf, int *kernel, int *fdt) {
     __parse_number(buf, &idx, fdt, 1);
 
     // check if all required fields were parsed
-    if (cmd[0] == '\0' || *kernel == 0 || *fdt == 0)
+    if (*kernel == 0 || *fdt == 0)
         return -EFAULT;
     return 0;
 }
@@ -120,10 +107,9 @@ static void mw(int *address, int value)
 static int parse_mm(const char *buf, int *address, int *length, int hex)
 {
     int idx = 0;
-    char cmd[8] = "";
 
-    // jump over name
-    parse_cmd_name(buf, cmd, &idx);
+    while (buf[idx] != ' ' && buf[idx] != '\0') 
+        idx ++;
 
     // parse address
     while (buf[idx] == ' ') idx++;
@@ -144,9 +130,9 @@ static int parse_cache(const char *buf)
     int idx = 0;
     char c;
     char status;
-    char cmd[8] = "";
 
-    parse_cmd_name(buf, cmd, &idx);
+    while (buf[idx] != ' ' && buf[idx] != '\0') 
+        idx ++;
 
     // parse i / d
     while (buf[idx] == ' ') idx++;
@@ -172,6 +158,7 @@ static int parse_cache(const char *buf)
     }
     else if (c == 'd')
     {
+        SCB_CleanDCache();
         if (status == 105) {
             SCB_InvalidateDCache();
             printf("cache: dcache invalid\r\n");
@@ -311,3 +298,14 @@ int do_version(const char *buf)
     return 0;
 }
 SHELL_EXPORT_CMD(version, NULL, do_version);
+
+/*
+ * reset
+ */
+int do_reset(const char *buf)
+{
+    NVIC_SystemReset();
+    return 0;
+}
+SHELL_EXPORT_CMD(reset, NULL, do_reset);
+

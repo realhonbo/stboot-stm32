@@ -1,7 +1,7 @@
 #ifndef BSP_EASYCONFIG_H
 #define BSP_EASYCONFIG_H
 
-#define STBOOT_VERSION         "2.4.0 (develop)"
+#define STBOOT_VERSION         "2.4.1 (stable)"
 
 #define HSE_FREQUENCY          25
 
@@ -26,6 +26,7 @@
 #define SDRAM_SIZE_MB           32
 #define FLASH_BASE_ADDR         0x08000000
 #define QSPI_FLASH_BASE_ADDR    0x90000000
+#define QSPI_FLASH_SIZE_MB      8
 
 /*
  * FDT address:     0x9000_0000 - 0x9001_0000 : 64KB, start of qspi-flash

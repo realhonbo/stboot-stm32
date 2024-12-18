@@ -10,7 +10,7 @@ MEMORY
     RAM_D1 (xrw) : ORIGIN = 0x24000000, LENGTH = 512K
     RAM_D2 (xrw) : ORIGIN = 0x30000000, LENGTH = 288K
     RAM_D3 (xrw) : ORIGIN = 0x38000000, LENGTH = 64K
-    ITCM   (xrw) : ORIGIN = 0x00001000, LENGTH = 64K /* ITCM的前4KB作为保留区域 */
+    ITCM   (xrw) : ORIGIN = 0x00001000, LENGTH = 64K /* pre-4KB for Reserved */
     SDRAM  (xrw) : ORIGIN = 0xC0000000, LENGTH = 32M
 /* FLASH */
     FLASH   (rx) : ORIGIN = 0x08000000, LENGTH = 2M
@@ -22,7 +22,7 @@ SECTIONS
     .isr_vector : {
         . = ALIGN(4);  _isr_start = .;
         KEEP(*(.isr_vector))
-    } >DTCM  AT>FLASH
+    } >ITCM  AT>FLASH
     _isr_size = SIZEOF(.isr_vector);
 
     .text : {
@@ -32,12 +32,6 @@ SECTIONS
         . = ALIGN(4);  _etext = .;
     } >FLASH
 
-    .shell_cmd : {
-        _shell_cmd_start = .;
-        KEEP(*(.shell_cmd))
-        _shell_cmd_end = .;
-    } >FLASH
-
     .itcm : {
        . = ALIGN(4);  _itcm_start = .;
        KEEP(*(.itcm))
@@ -45,25 +39,7 @@ SECTIONS
     _itcm_at_start = LOADADDR(.itcm);
     _itcm_size = SIZEOF(.itcm);
 
-    .ram_d1 : {
-        . = ALIGN(4);
-        KEEP(*(.ram_d1)) KEEP(*(.normal_speed))
-        . = ALIGN(4);
-    } >RAM_D1
-
-    .ram_d2 : {
-        . = ALIGN(4); KEEP(*(.ram_d2)) . = ALIGN(4);
-    } >RAM_D2
-
-    .sdram : {
-        . = ALIGN(4); KEEP(*(.sdram)) . = ALIGN(4);
-    } >SDRAM
-
-    .qspi : {
-        . = ALIGN(4); KEEP(*(.qspi)) . = ALIGN(4);
-    } >QSPI
-
-    /* constant data goes into FLASH */
+/* constant data */
     .rodata : {
         . = ALIGN(4); *(.rodata .rodata*) . = ALIGN(4);
     } >FLASH
@@ -96,13 +72,20 @@ SECTIONS
         PROVIDE_HIDDEN (__fini_array_end = .);
     } >FLASH
 
+/* data */
     _sidata = LOADADDR(.data);
     .data : {
         . = ALIGN(4);  _sdata = .;
         *(.data .data*)
-        . = ALIGN(4);  _edata = .;
     } >DTCM  AT>FLASH
 
+/* commands */
+    .shell_cmd : {
+        _shell_cmd_start = .;
+        KEEP(*(.shell_cmd))
+        . = ALIGN(4);  _edata = .;
+        _shell_cmd_end = .;
+    } >DTCM  AT>FLASH
 
     . = ALIGN(4);
     .bss : {
@@ -117,7 +100,6 @@ SECTIONS
         . = ALIGN(8);
     } >DTCM
 
-    /* remove information from the standard libraries */
     /DISCARD/ : {
         libc.a ( * ) libm.a ( * ) libgcc.a ( * )
     }

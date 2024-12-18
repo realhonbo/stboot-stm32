@@ -15,15 +15,17 @@
 #include "bsp.h"
 #include "qspi-flash.h"
 
-#define RW_SIZE         0x400000    // 测试数据量: Byte
-#define caculate_speed   (RW_SIZE / 1000 / (end_time - start_time))
+#define RW_SIZE      (SDRAM_SIZE_MB * 1024 * 1024)
+// winbond: cannot read the last bit at XIP mode
+#define RD_SIZE      (QSPI_FLASH_SIZE_MB * 1024 * 1024 - 1)
+#define SPEED(size)  (size / 1000 / (end_time - start_time))
 
 static int start_time, end_time;
 
-static inline void memory_write(__IO int *addr)
+static inline void memory_write(__IO int *addr, int size)
 {
     int i, j = 0;
-    int _SIZE = RW_SIZE / sizeof(int) / 32;
+    int _SIZE = size / sizeof(int) / 32;
     start_time = HAL_GetTick();
     for (i = 0; i < _SIZE; i++) {
         *addr++ = j++;
@@ -65,10 +67,10 @@ static inline void memory_write(__IO int *addr)
     end_time = HAL_GetTick();
 }
 
-static inline void memory_read(__IO int *addr)
+static inline void memory_read(__IO int *addr, int size)
 {
     int i, tmp;
-    int _SIZE = RW_SIZE / sizeof(int) / 32;
+    int _SIZE = size / sizeof(int) / 32;
     start_time = HAL_GetTick();
     for (i = 0; i < _SIZE; i++) {
         tmp = *addr++;
@@ -115,19 +117,16 @@ static inline void memory_read(__IO int *addr)
  * @brief 测试 SDRAM 读写速度 & QSPI-Flash 读速度
  */
 __itcm void memory_speed_test(void) {
-    __IO int *sdram = (int *)SDRAM_BASE_ADDR;
-    __IO int *qspi  = (int *)QSPI_FLASH_BASE_ADDR;
-
 /* SDRAM */
-    memory_write(sdram);
-    printf("sdram write: %d MB/s\r\n", caculate_speed);
+    memory_write((int *)SDRAM_BASE_ADDR, RW_SIZE);
+    printf("sdram write: %d MB/s\r\n", SPEED(RW_SIZE));
 
-    memory_read(sdram);
-    printf("sdram  read: %d MB/s\r\n", caculate_speed);
+    memory_read((int *)SDRAM_BASE_ADDR, RW_SIZE);
+    printf("sdram  read: %d MB/s\r\n", SPEED(RW_SIZE));
 
 /* QSPI Flash */
-    memory_read(qspi);
-    printf("qspi-flash read: %d MB/s\r\n", caculate_speed);
+    memory_read((int *)QSPI_FLASH_BASE_ADDR, RD_SIZE);
+    printf("qspi-flash read: %d MB/s\r\n", SPEED(RD_SIZE));
 
     printf("\r\n");
 }

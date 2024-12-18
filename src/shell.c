@@ -72,11 +72,10 @@ static void parse_command(const char *);
  ** init commands from section `.shell_cmd`
  * append all to cmd linklist
  */
-void init_commands(void)
+void commands_init(void)
 {
-    extern struct cmd _shell_cmd_start, 
+    extern struct cmd _shell_cmd_start,
                       _shell_cmd_end;
-    struct cmd *command;
     struct cmd *current = &_shell_cmd_start;
 
     head = malloc(sizeof(struct cmd));
@@ -105,16 +104,14 @@ __itcm void console_cmd(void)
     char buf[MAX_CMD_LENGTH];
 
 #ifdef CONSOLE_CMD
-    init_commands();
-input:
-    memset(buf, 0, MAX_CMD_LENGTH);
-    printf("\033[1;36mst-boot > \033[0m");
+    commands_init();
     setvbuf(stdin,  NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
 
+input:
+    memset(buf, 0, MAX_CMD_LENGTH);
+    printf("=> ");
     command_read(buf);
-
-    // solve commands
     parse_command(buf);
     goto input;
 #endif
@@ -189,7 +186,7 @@ static void command_read(char *buf)
         if (!idx) buf[idx] = '\0';
         continue;
     case '\t': // Tab Complete
-        for (iter = head->next; iter; iter = iter->next) {
+        for (iter = head->next; iter; iter = iter->next)
             if (!strncmp(buf, iter->name, idx)) {
                 len = strlen(iter->name+idx);
                 printf("%s", iter->name+idx);
@@ -197,7 +194,6 @@ static void command_read(char *buf)
                 idx += len;
                 adx += len;
             }
-        }
         continue;
     case '\r': // Enter
         printf("\r\n");
@@ -233,11 +229,7 @@ static void command_read(char *buf)
  * parse command input
  */
 static void parse_command(const char *buf) {
-    int i;
     struct cmd *iter;
-    int kernel, fdt;
-    int address;
-    int length, value;
 
     if (!strlen(buf))
         return;

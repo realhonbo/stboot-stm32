@@ -2,18 +2,34 @@
     "version": "2.0.0",
     "type": "shell",
     "tasks": [
-        {
+        { // mkdir build and generate Makefile
+            "label": "configure",
+            "command": "cmake",
+            "args": [
+                "-S", ".", 
+                "-B", "build/",
+                "-G", "Unix Makefiles"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        { // compile
             "label": "build",
             "command": "cmake",
             "args": [
-                "--build", 
-                "build/"
+                "--build",
+                "build/",
+                "-j16"
             ],
             "problemMatcher": [
                 "$gcc"
-            ]
+            ],
+            "dependsOn": "configure"
         },
-        {
+        { // copy to out
             "label": "copy",
             "command": "cp",
             "args": [
@@ -26,7 +42,7 @@
             },
             "dependsOn": "build"
         },
-        {
+        { // OpenOCD flash
             "label": "program->stm32",
             "command": "openocd",
             "args": [
@@ -45,6 +61,25 @@
                 "isDefault": true
             },
             "dependsOn": "copy"
+        },
+        { // only flash
+            "label": "only program",
+            "command": "openocd",
+            "args": [
+                "-f",
+                "interface/stlink.cfg",
+                "-f",
+                "target/stm32h7x.cfg",
+                "-c",
+                "program build/stboot.bin 0x8000000 verify reset exit"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         },
     ]
 }

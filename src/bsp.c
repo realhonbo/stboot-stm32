@@ -13,7 +13,7 @@
 #include "bsp.h"
 
 /*
- * 写回型，有读写分配
+ * write back + fetch on write
  */
 void mpu_config(void)
 {
