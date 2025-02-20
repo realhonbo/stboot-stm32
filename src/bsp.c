@@ -110,7 +110,7 @@ void sysclk_config(void)
         RCC_OscInitStruct.PLL.PLLM       = SYSCLK_PLL_M;
         RCC_OscInitStruct.PLL.PLLN       = SYSCLK_PLL_N;
         RCC_OscInitStruct.PLL.PLLP       = SYSCLK_PLL_P;
-        RCC_OscInitStruct.PLL.PLLQ       = 2;
+        RCC_OscInitStruct.PLL.PLLQ       = 4; // 2
         RCC_OscInitStruct.PLL.PLLR       = 2;
         RCC_OscInitStruct.PLL.PLLRGE     = RCC_PLL1VCIRANGE_2;
         RCC_OscInitStruct.PLL.PLLVCOSEL  = RCC_PLL1VCOWIDE;
@@ -135,8 +135,11 @@ void sysclk_config(void)
                                 __FILE__, __LINE__);
         }
 
-        PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB;
+        PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB | RCC_PERIPHCLK_SDMMC |
+                                                   RCC_PERIPHCLK_QSPI;
         PeriphClkInitStruct.UsbClockSelection    = RCC_USBCLKSOURCE_HSI48;
+        PeriphClkInitStruct.SdmmcClockSelection  = RCC_SDMMCCLKSOURCE_PLL;
+        PeriphClkInitStruct.QspiClockSelection   = RCC_QSPICLKSOURCE_D1HCLK;
         if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct)) {
                 pr_info("Error: file: %s, line: %d", 
                                 __FILE__, __LINE__);

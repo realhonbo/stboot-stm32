@@ -107,3 +107,7 @@ void DebugMon_Handler(void)
  * @brief: After Tx is completed, the SPI DMA should be stopped for next transfer
 */
 
+void SDMMC1_IRQHandler(void)
+{
+        HAL_SD_IRQHandler(0);
+}

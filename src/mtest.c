@@ -112,11 +112,12 @@ static inline void memory_read(__IO int *addr, int size)
     end_time = HAL_GetTick();
 }
 
-
+extern QSPI_HandleTypeDef hqspi;
 /**
  * @brief 测试 SDRAM 读写速度 & QSPI-Flash 读速度
  */
-__itcm void memory_speed_test(void) {
+__itcm void memory_speed_test(void)
+{
 /* SDRAM */
     memory_write((int *)SDRAM_BASE_ADDR, RW_SIZE);
     printf("sdram write: %d MB/s\r\n", SPEED(RW_SIZE));
@@ -125,8 +126,11 @@ __itcm void memory_speed_test(void) {
     printf("sdram  read: %d MB/s\r\n", SPEED(RW_SIZE));
 
 /* QSPI Flash */
+    QSPI_W25Qxx_MMMode();
     memory_read((int *)QSPI_FLASH_BASE_ADDR, RD_SIZE);
-    printf("qspi-flash read: %d MB/s\r\n", SPEED(RD_SIZE));
+    printf("qspi-flash read(mm-mode): %d MB/s\r\n", SPEED(RD_SIZE));
+    HAL_QSPI_Abort(&hqspi);
+    QSPI_W25Qxx_Init();
 
     printf("\r\n");
 }

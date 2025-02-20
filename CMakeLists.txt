@@ -27,8 +27,8 @@ add_compile_options(
         # assembler files preprocessing
         $<$<COMPILE_LANGUAGE:ASM>:-x$<SEMICOLON>assembler-with-cpp>
         # optimization level
-        # -Og -g
-        -O3
+        -Og -g
+        # -O3
 )
 
 include_directories(
@@ -38,6 +38,7 @@ include_directories(
         drivers/STM32H7xx_HAL_Driver/Inc/Legacy
         drivers/CMSIS/Device/ST/STM32H7xx/Include
         drivers/CMSIS/Include
+        drivers/FatFs
         src/lib
 # usr
         src

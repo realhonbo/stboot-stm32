@@ -8,14 +8,22 @@
             "executable": "./build/stboot.elf",
             "request": "launch",
             "type": "cortex-debug",
-            ////"runToEntryPoint": "main",
             "servertype": "openocd",
             "configFiles": [
                 "interface/stlink.cfg",
                 "target/stm32h7x.cfg"
             ],
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            },
+            "serverArgs": [
+                "-c",
+                "adapter speed 4000"
+            ],
             "svdFile":"stm32h743.svd",
-            ////"preLaunchTask": "program->stm32"
+            ////"runToEntryPoint": "main",
+            ////"preLaunchTask": ""
         }
     ]
 }

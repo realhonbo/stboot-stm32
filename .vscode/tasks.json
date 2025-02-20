@@ -16,18 +16,11 @@
                 "isDefault": false
             }
         },
-        { // compile
-            "label": "build",
+        {
+            "label": "compile",
             "command": "cmake",
-            "args": [
-                "--build",
-                "build/",
-                "-j16"
-            ],
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "dependsOn": "configure"
+            "args": [ "--build", "build/", "-j16" ],
+            "problemMatcher": [ "$gcc" ],
         },
         { // copy to out
             "label": "copy",
@@ -40,10 +33,10 @@
                 "kind": "build",
                 "isDefault": false
             },
-            "dependsOn": "build"
+            "dependsOn": "compile"
         },
-        { // OpenOCD flash
-            "label": "program->stm32",
+        {
+            "label": "compile and program",
             "command": "openocd",
             "args": [
                 "-f",
@@ -53,17 +46,15 @@
                 "-c",
                 "program build/stboot.bin 0x8000000 verify reset exit"
             ],
-            "problemMatcher": [
-                "$gcc"
-            ],
+            "problemMatcher": [ "$gcc" ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
             "dependsOn": "copy"
         },
-        { // only flash
-            "label": "only program",
+        {
+            "label": "program",
             "command": "openocd",
             "args": [
                 "-f",
@@ -71,11 +62,11 @@
                 "-f",
                 "target/stm32h7x.cfg",
                 "-c",
+                "adapter speed 4000",
+                "-c",
                 "program build/stboot.bin 0x8000000 verify reset exit"
             ],
-            "problemMatcher": [
-                "$gcc"
-            ],
+            "problemMatcher": [ "$gcc" ],
             "group": {
                 "kind": "build",
                 "isDefault": true

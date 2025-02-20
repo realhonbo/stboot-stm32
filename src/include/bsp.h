@@ -1,7 +1,7 @@
 #ifndef BSP_EASYCONFIG_H
 #define BSP_EASYCONFIG_H
 
-#define STBOOT_VERSION         "2.4.1 (stable)"
+#define STBOOT_VERSION         "2.5.0 (develop)"
 
 #define HSE_FREQUENCY          25
 
@@ -51,6 +51,8 @@
 void sysclk_config(void);
 void mpu_config(void);
 void sdram_init(void);
+void sdmmc_mount(void);
+int  sdmmc_read_file(const char *, unsigned char **, int *);
 void led_init(void);
 void led_timer_handler(void);
 

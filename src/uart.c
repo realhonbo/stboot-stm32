@@ -26,10 +26,11 @@ static struct epb ebuf = {.flag = 1};
 
 
 /* lib prototype */
-int __io_putchar(int ch)
+int _write(int file, char *ptr, int len)
 {
-    HAL_UART_Transmit(&tty, (uint8_t *)&ch, 1, 100);
-    return ch;
+    (void)file;
+    HAL_UART_Transmit(&tty, (uint8_t *)ptr, len, 0xff);
+    return len;
 }
 
 int __io_getchar(void)

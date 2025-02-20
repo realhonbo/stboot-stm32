@@ -26,6 +26,7 @@ static void copy_to_tcm(void)
             &_isr_start, &_itcm_start);
 }
 
+
 /**
  ** kernel(0, ~0, FDT_ADDR);
  *
@@ -50,6 +51,7 @@ void kernel_entry(int kernel, int fdt)
     pr_info("");
 
     // dcache should be closed before kernel init
+    QSPI_W25Qxx_MMMode();
     SCB_DisableDCache();
 
     asm volatile ( "ldr r0, [%0]\n"
@@ -80,10 +82,10 @@ int main(void) {
     console_init();
     led_init();
 
-    // set nor_flash and sdram
+    // set nor_flash, sdram and sd
     QSPI_W25Qxx_Init();
-    QSPI_W25Qxx_MMMode();
     sdram_init();
+    sdmmc_mount();
 
     // jump to kernel
     console_cmd();

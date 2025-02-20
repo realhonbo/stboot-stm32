@@ -14,6 +14,8 @@
 #include "bsp.h"
 #include "errno.h"
 #include "cmd.h"
+#include "qspi-flash.h"
+#include "ff.h"
 
 extern struct cmd *head;
 
@@ -308,4 +310,65 @@ int do_reset(const char *buf)
     return 0;
 }
 SHELL_EXPORT_CMD(reset, NULL, do_reset);
+
+/*
+ * update fdt / kernel
+ */
+int do_update_fdt(const char *buf)
+{
+    unsigned char *fdt;
+    int size;
+    int ret;
+
+    // read from sd
+    ret = sdmmc_read_file("0:fdt", &fdt, &size);
+
+    if (ret == FR_OK) {
+        // write into qspi-flash
+        printf("image size: %3.2fKB, erasing flash ...\r\n", (float)size/1024);
+        QSPI_W25Qxx_BlockErase_64K(FDT_ADDR-QSPI_FLASH_BASE_ADDR);
+        printf("writing dtb ...\r\n");
+        ret = QSPI_W25Qxx_WriteBuffer(fdt, FDT_ADDR-QSPI_FLASH_BASE_ADDR, size);
+        if (ret) {
+            printf("Error: %d in writing qspi-flash\r\n", ret);
+            return -EIO;
+        }
+        printf("update fdt success\r\n");
+    }
+
+    return 0;
+}
+SHELL_EXPORT_CMD(update_fdt, NULL, do_update_fdt);
+
+int do_update_kernel(const char *buf)
+{
+    unsigned char *kernel;
+    int size = 0;
+    int ret;
+    int eaddr = KERNEL_ADDR-QSPI_FLASH_BASE_ADDR;
+
+    // read from sd
+    ret = sdmmc_read_file("0:kernel", &kernel, &size);
+
+    if (ret == FR_OK) {
+        // erase blocks
+        printf("image size: %3.2fMB, ready to erase flash:\r\n", (float)size/1024/1024);
+        while (eaddr < size) {
+            printf("\rerasing flash block [%3d]", eaddr >> 16);
+            QSPI_W25Qxx_BlockErase_64K(eaddr);
+            eaddr += 0x10000;
+        }
+        // write into qspi-flash
+        printf("\r\nwriting kernel image ...\r\n");
+        ret = QSPI_W25Qxx_WriteBuffer(kernel, KERNEL_ADDR-QSPI_FLASH_BASE_ADDR, size);
+        if (ret) {
+            printf("Error: %d in writing qspi-flash\r\n", ret);
+            return -EIO;
+        }
+        printf("update kernel success\r\n");
+    }
+
+    return 0;
+}
+SHELL_EXPORT_CMD(update_kernel, NULL, do_update_kernel);
 
