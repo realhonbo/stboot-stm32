@@ -83,7 +83,11 @@ int main(void) {
     led_init();
 
     // set nor_flash, sdram and sd
-    QSPI_W25Qxx_Init();
+    if (QSPI_W25Qxx_Init())
+        pr_info("qspi: w25q64 flash init failed");
+    else
+        pr_info("qspi: w25q64 flash init success");
+
     sdram_init();
     sdmmc_mount();
 

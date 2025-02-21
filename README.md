@@ -72,7 +72,7 @@
   
 - **Program** 
 
-  【**UPDATE**】**支持 SD 卡烧写，将 设备树 / 内核镜像 重命名为 fdt / kernel，并拷贝到 SD 卡中，执行 update_fdt / update_kernel 即可完成烧录** 
+  【**UPDATE**】**支持 SD 卡烧写，将 设备树 / 内核镜像 重命名为 fdt / kernel，并拷贝到 SD 卡中，执行 `update fdt` 和 `update kernel` 即可完成烧录，烧录过程支持掉电恢复** 
 
   - `stboot.bin` -> `0x0800_0000`
   

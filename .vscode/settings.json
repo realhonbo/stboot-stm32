@@ -1,5 +1,5 @@
 { // config it
     "cortex-debug.armToolchainPath": "B:\\ARM-GNU-TOOLCHAIN\\BIN",
     "cortex-debug.openocdPath": "B:\\OPENOCD\\BIN\\OPENOCD.EXE",
-    "cortex-debug.variableUseNaturalFormat": true
+    "cortex-debug.variableUseNaturalFormat": false
 }

@@ -156,13 +156,9 @@ int8_t QSPI_W25Qxx_Init(void)
 	Device_ID = QSPI_W25Qxx_ReadID();
 	
 	if( Device_ID == W25Qxx_FLASH_ID )
-	{
-		pr_info("flash: w25q64 flash (ID:%X) init success", Device_ID);
 		return QSPI_W25Qxx_OK;
-	} else {
-		pr_info("flash: w25q64 flash (ID:%X) init failed", Device_ID);
+	else
 		return W25Qxx_ERROR_INIT;
-	}	
 }
 
 /*************************************************************************************************

@@ -312,9 +312,79 @@ int do_reset(const char *buf)
 SHELL_EXPORT_CMD(reset, NULL, do_reset);
 
 /*
- * update fdt / kernel
+ * set qspi-flash memory mapped mode
  */
-int do_update_fdt(const char *buf)
+void qftool_map(void)
+{
+    if (QSPI_W25Qxx_MMMode()) {
+        pr_info("Error: failed to map qspi-flash to memory space");
+    }
+    pr_info("qspi: memory mapped success");
+}
+
+void qftool_unmap(void)
+{
+    extern QSPI_HandleTypeDef hqspi;
+
+    HAL_QSPI_Abort(&hqspi);
+    QSPI_W25Qxx_Init();
+    pr_info("qspi: memory unmapped");
+}
+
+int do_qftool(const char *buf)
+{
+    int idx = 0;
+    const char *arg;
+
+    while (buf[idx] != ' ' && buf[idx] != '\0') 
+        idx ++;
+
+    // parse fdt / kernel
+    while (buf[idx] == ' ') idx++;
+    arg = &buf[idx];
+
+    switch (arg[0]) {
+    case 'm':
+        qftool_map();
+        break;
+    case 'u':
+        qftool_unmap();
+        break;
+    default:
+        return -EINVAL;
+    }
+    return 0;
+}
+
+void help_qftool(void)
+{
+    println(L2, "qftool <map/unmap>");
+    println(L2, "a tool for controlling qspi-flash");
+}
+SHELL_EXPORT_CMD(qftool, help_qftool, do_qftool);
+
+/*
+ * update fdt / kernel
+ *
+ * slice the end 4KB sector (0xf000) from 64KB Block storing dtb,
+ * for recording current erasing and writing status of the image
+ * a bitmap shows below:
+ *      0000 0000 0000 0000 0011 1111 1111 1111
+ *      1111 1111 1111 1111 1111 1111 1111 1111
+ *      1111 1111 1111 1111 1111 1111 1111 1111
+ *      1111 1111 1111 1111 1111 1111 1111 1111
+ * total 128 bits for record 128 blocks of w25q64, the figure above represents
+ *  block 0 - 17 had been writen succeed,
+ * if reupdate, image will be write starting from block 18th
+ *
+ * update status:
+ * [default]    0xff
+ * [writing]    0xaa
+ * [finish]     0x00
+ *  status byte will be erase after succeed (implicit erase, actual called before next full write)
+ *
+ */
+int update_fdt(void)
 {
     unsigned char *fdt;
     int size;
@@ -335,40 +405,110 @@ int do_update_fdt(const char *buf)
         }
         printf("update fdt success\r\n");
     }
-
     return 0;
 }
-SHELL_EXPORT_CMD(update_fdt, NULL, do_update_fdt);
 
-int do_update_kernel(const char *buf)
+int update_kernel(void)
 {
-    unsigned char *kernel;
+#define BITMAP_SECTOR  0xf000
+#define BITMAP_SIZE    16
+#define BITMAP_END     0xffff
+    unsigned char *image_buffer;
     int size = 0;
     int ret;
     int eaddr = KERNEL_ADDR-QSPI_FLASH_BASE_ADDR;
+    int i;
+    uint8_t block_bitmap[BITMAP_SIZE];
+    uint8_t calib;
 
-    // read from sd
-    ret = sdmmc_read_file("0:kernel", &kernel, &size);
+    QSPI_W25Qxx_ReadBuffer(&calib, BITMAP_SECTOR+BITMAP_SIZE, 1);
 
-    if (ret == FR_OK) {
-        // erase blocks
-        printf("image size: %3.2fMB, ready to erase flash:\r\n", (float)size/1024/1024);
-        while (eaddr < size) {
-            printf("\rerasing flash block [%3d]", eaddr >> 16);
-            QSPI_W25Qxx_BlockErase_64K(eaddr);
-            eaddr += 0x10000;
-        }
-        // write into qspi-flash
-        printf("\r\nwriting kernel image ...\r\n");
-        ret = QSPI_W25Qxx_WriteBuffer(kernel, KERNEL_ADDR-QSPI_FLASH_BASE_ADDR, size);
+    if (calib == 0xaa) { // need recover
+        // read bitmap
+        ret = QSPI_W25Qxx_ReadBuffer(block_bitmap, BITMAP_SECTOR, sizeof(block_bitmap));
         if (ret) {
-            printf("Error: %d in writing qspi-flash\r\n", ret);
+            printf("Error: %d in reading bitmap\r\n", ret);
             return -EIO;
         }
-        printf("update kernel success\r\n");
+        // search re-startup block
+        for (i = 127; i >= 0; i--) {
+            if (block_bitmap[i / 8] >> (7 - i % 8) == 0)
+                break;
+        }
+        eaddr = (i + 1) * 0x10000;
+    } else {
+        // erase bitmap sector, change calib
+        QSPI_W25Qxx_SectorErase(BITMAP_SECTOR);
+        memset(block_bitmap, 0xff, sizeof(block_bitmap));
+        QSPI_W25Qxx_WritePage(&(uint8_t){0xaa}, BITMAP_SECTOR+BITMAP_SIZE, 1);
     }
 
+    // read from sd
+    ret = sdmmc_read_file("0:kernel", &image_buffer, &size);
+
+    if (ret == FR_OK) {
+        printf("image size: %3.2fMB, ready to erase flash:\r\n", (float)size/1024/1024);
+
+        while (eaddr < size) {
+            i = (eaddr >> 16) - 1;
+
+            // erase blocks
+            printf("\rerasing flash block  [%3d]", i);
+            QSPI_W25Qxx_BlockErase_64K(eaddr);
+
+            // write into qspi-flash
+            printf("\rwriting kernel image [%3d]", i);
+            ret = QSPI_W25Qxx_WriteBuffer(image_buffer + i * 0x10000, eaddr, 0x10000);
+            if (ret) {
+                printf("\r\nError: %d in writing qspi-flash\r\n", ret);
+                return -EIO;
+            }
+
+            // bitmap
+            block_bitmap[i / 8] &= ~(1 << (7 - i % 8));
+            QSPI_W25Qxx_WritePage(block_bitmap, BITMAP_SECTOR, sizeof(block_bitmap));
+
+            eaddr += 0x10000;
+        }
+
+        ret = QSPI_W25Qxx_WritePage(&(uint8_t){0x00}, BITMAP_SECTOR+BITMAP_SIZE, 1);
+        if (ret) {
+            printf("Error: %d in writing calibration\r\n", ret);
+            return -EIO;
+        }
+        printf("\r\nupdate kernel success\r\n");
+    }
     return 0;
 }
-SHELL_EXPORT_CMD(update_kernel, NULL, do_update_kernel);
 
+int do_update(const char *buf)
+{
+    int idx = 0;
+    const char *arg;
+
+    while (buf[idx] != ' ' && buf[idx] != '\0')
+        idx ++;
+
+    // parse fdt / kernel
+    while (buf[idx] == ' ') idx++;
+    arg = &buf[idx];
+    
+    switch (arg[0]) {
+    case 'f':
+        update_fdt();
+        break;
+    case 'k':
+        update_kernel();
+        break;
+    default:
+        return -EINVAL;
+    }
+    return 0;
+}
+
+void help_update(void)
+{
+    println(L2, "update <fdt/kernel>");
+    println(L2, "! need you modify the image file name to \"fdt\" or \"kernel\" in advance");
+}
+SHELL_EXPORT_CMD(update, help_update, do_update);
