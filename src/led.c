@@ -25,7 +25,7 @@ void led_init(void)
     HAL_GPIO_Init(GPIOC, &gpio);
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, 0);
 
-    pr_info("led: gpioc-13 as triggered led");
+    printk(KERN_INFO "led: gpioc-13 as triggered led");
 }
 
 void led_timer_handler(void)

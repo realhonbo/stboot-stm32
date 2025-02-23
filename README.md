@@ -103,7 +103,7 @@
     [    0.000203] mpu: mem 0xc0000000 setup, size 32MB
     [    0.000261] mpu: mem 0x08000000 setup, size 2MB
     [    0.000319] mpu: mem 0x90000000 setup, size 8MB
-    [    0.051858] tty: uart1 init success
+    [    0.051858] console: uart1 init success
     [    0.055372] led: gpioc-13 as triggered led
     [    0.059504] flash: w25q64 flash (ID:EF4017) init success
     [    0.066001] sdram: configure success

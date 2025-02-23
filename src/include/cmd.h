@@ -18,9 +18,8 @@ struct cmd {
         .exec = exec_func \
     }
 
-// command help println
-#define CMD_SPACE_L2      "        "
-#define println(level, fmt) printf(CMD_SPACE_##level"%s\r\n",fmt)
+// command help printsh
+#define printsh(fmt) printf("        %s\r\n",fmt)
 
 
 #endif

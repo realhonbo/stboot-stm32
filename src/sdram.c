@@ -156,13 +156,13 @@ void sdram_init(void)
 /* 初始化FMC接口
  * 配置命令和刷新率
  */     if (HAL_SDRAM_Init(&hsdram1, &timing))
-            pr_info("sdram: init failed");
+            printk(KERN_ERR "sdram: init failed");
 
         sdram_send_command(&hsdram1);
 
         if (HAL_SDRAM_ProgramRefreshRate(&hsdram1, 918))
-            pr_info("sdram: chuck in set refresh rate");
+            printk(KERN_INFO "sdram: chuck in set refresh rate");
 
-        pr_info("sdram: configure success");
+        printk(KERN_INFO "sdram: configure success");
 }
 

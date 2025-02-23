@@ -33,40 +33,40 @@ void mpu_config(void)
         mpu_init.TypeExtField = MPU_TEX_LEVEL1;
         mpu_init.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
         HAL_MPU_ConfigRegion(&mpu_init);
-        pr_info("mpu: mem 0x%08x setup, size 512KB", mpu_init.BaseAddress);
+        printk(KERN_INFO "mpu: mem 0x%08x setup, size 512KB", mpu_init.BaseAddress);
 #ifdef USE_SRAM_D2 /* SRAM_D2 */
         mpu_init.BaseAddress = 0x30000000;
         mpu_init.Size = MPU_REGION_SIZE_256KB;
         mpu_init.Number = MPU_REGION_NUMBER1;
         HAL_MPU_ConfigRegion(&mpu_init);
-        pr_info("mpu: mem 0x%08x setup, size 256KB", mpu_init.BaseAddress);
+        printk(KERN_INFO "mpu: mem 0x%08x setup, size 256KB", mpu_init.BaseAddress);
 #endif
 #ifdef USE_SRAM_D3 /* SRAM_D3 */
         mpu_init.BaseAddress = 0x38000000;
         mpu_init.Size = MPU_REGION_SIZE_64KB;
         mpu_init.Number = MPU_REGION_NUMBER2;
         HAL_MPU_ConfigRegion(&mpu_init);
-        pr_info("mpu: mem 0x%08x setup, size 64KB", mpu_init.BaseAddress);
+        printk(KERN_INFO "mpu: mem 0x%08x setup, size 64KB", mpu_init.BaseAddress);
 #endif
 /* SDRAM */
         mpu_init.BaseAddress = SDRAM_BASE_ADDR;
         mpu_init.Size = MPU_REGION_SIZE_32MB;
         mpu_init.Number = MPU_REGION_NUMBER3;
         HAL_MPU_ConfigRegion(&mpu_init);
-        pr_info("mpu: mem 0x%08x setup, size 32MB", mpu_init.BaseAddress);
+        printk(KERN_INFO "mpu: mem 0x%08x setup, size 32MB", mpu_init.BaseAddress);
 /* FLASH */
         mpu_init.BaseAddress = FLASH_BASE_ADDR;
         mpu_init.Size = MPU_REGION_SIZE_2MB;
         mpu_init.Number = MPU_REGION_NUMBER4;
         HAL_MPU_ConfigRegion(&mpu_init);
-        pr_info("mpu: mem 0x%08x setup, size 2MB", mpu_init.BaseAddress);
+        printk(KERN_INFO "mpu: mem 0x%08x setup, size 2MB", mpu_init.BaseAddress);
 /* QSPI FLASH */
         mpu_init.BaseAddress = QSPI_FLASH_BASE_ADDR;
         mpu_init.Size = MPU_REGION_SIZE_8MB;
         mpu_init.Number = MPU_REGION_NUMBER5;
         HAL_MPU_ConfigRegion(&mpu_init);
         HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
-        pr_info("mpu: mem 0x%08x setup, size 8MB", mpu_init.BaseAddress);
+        printk(KERN_INFO "mpu: mem 0x%08x setup, size 8MB", mpu_init.BaseAddress);
 }
 
 
@@ -116,7 +116,7 @@ void sysclk_config(void)
         RCC_OscInitStruct.PLL.PLLVCOSEL  = RCC_PLL1VCOWIDE;
         RCC_OscInitStruct.PLL.PLLFRACN   = 0;
         if (HAL_RCC_OscConfig(&RCC_OscInitStruct)) {
-                pr_info("Error: file: %s, line: %d", 
+                printk(KERN_ERR "in file: %s, line: %d", 
                                 __FILE__, __LINE__);
         }
 /* 初始化CPU | AHB | APB总线时钟 */
@@ -131,7 +131,7 @@ void sysclk_config(void)
         RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
         RCC_ClkInitStruct.APB4CLKDivider = RCC_APB4_DIV2;
         if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4)) {
-                pr_info("Error: file: %s, line: %d", 
+                printk(KERN_ERR "in file: %s, line: %d", 
                                 __FILE__, __LINE__);
         }
 
@@ -141,7 +141,7 @@ void sysclk_config(void)
         PeriphClkInitStruct.SdmmcClockSelection  = RCC_SDMMCCLKSOURCE_PLL;
         PeriphClkInitStruct.QspiClockSelection   = RCC_QSPICLKSOURCE_D1HCLK;
         if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct)) {
-                pr_info("Error: file: %s, line: %d", 
+                printk(KERN_ERR "in file: %s, line: %d", 
                                 __FILE__, __LINE__);
         }
 /* 使用IO高速模式, 要使能IO补偿
@@ -158,7 +158,7 @@ void sysclk_config(void)
         __HAL_RCC_D2SRAM1_CLK_ENABLE();
 #endif
         fcpu = HSE_FREQUENCY * SYSCLK_PLL_N / SYSCLK_PLL_M / SYSCLK_PLL_P;
-        pr_info("sysclk: system clock configured, CPU %dMHz", fcpu);
+        printk(KERN_INFO "sysclk: system clock configured, CPU %dMHz", fcpu);
 }
 
 /**
@@ -166,7 +166,7 @@ void sysclk_config(void)
  */
 void Error_Handler(char *file, int line)
 {
-        pr_info("Error: file: %s, line: %d", file, line);
+        printk(KERN_ERR "in file: %s, line: %d", file, line);
 }
 
 

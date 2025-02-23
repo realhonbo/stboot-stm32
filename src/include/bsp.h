@@ -1,7 +1,7 @@
 #ifndef BSP_EASYCONFIG_H
 #define BSP_EASYCONFIG_H
 
-#define STBOOT_VERSION         "2.5.1 (develop)"
+#define STBOOT_VERSION         "2.5.2 (develop)"
 
 #define HSE_FREQUENCY          25
 
@@ -51,19 +51,27 @@
 void sysclk_config(void);
 void mpu_config(void);
 void sdram_init(void);
+void memory_speed_test(void);
 void sdmmc_mount(void);
 int  sdmmc_read_file(const char *, unsigned char **, int *);
+
 void led_init(void);
 void led_timer_handler(void);
+
+
+#define KERN_ERR     "<3>"    /* error     */
+#define KERN_WARNING "<4>"    /* warning   */
+#define KERN_INFO    "<6>"    /* info      */
+#define KERN_DEBUG   "<7>"    /* debug     */
 
 void Error_Handler(char *, int);
 void console_init(void);
 void error_print(void);
-void pr_info(const char *, ...);
+void printk(const char *, ...);
 void console_cmd(void);
+
 
 void kernel_entry(int, int);
 
-void memory_speed_test(void);
 
 #endif

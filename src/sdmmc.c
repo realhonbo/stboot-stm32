@@ -33,13 +33,13 @@ static void sdmmc_get_capacity(void)
     total_capacity = total_sector / 1024 / 1024 * byte_per_sector;
 
     if (free_capacity > 4096)
-        pr_info("sdmmc: free: %3.1fGB, total: %3.1fGB", 
+        printk(KERN_INFO "sdmmc: free: %3.1fGB, total: %3.1fGB", 
                 (float)free_capacity/1024, (float)total_capacity/1024);
     else if (total_capacity < 4096)
-        pr_info("sdmmc: free: %dMB, total: %dMB", 
+        printk(KERN_INFO "sdmmc: free: %dMB, total: %dMB", 
                 free_capacity, total_capacity);
     else {
-        pr_info("sdmmc: free: %dMB, total: %3.1fGB", 
+        printk(KERN_INFO "sdmmc: free: %dMB, total: %3.1fGB", 
                 free_capacity, (float)total_capacity/1024);
     }
 }
@@ -58,10 +58,10 @@ void sdmmc_mount(void)
     fs_ret = f_mount(&sdmmc_fatfs, "0:", 1);
 
     if (fs_ret == FR_OK) {
-        pr_info("sdmmc: fatfs mounted");
+        printk(KERN_INFO "sdmmc: fatfs mounted");
         sdmmc_get_capacity();
     } else {
-        pr_info("sdmmc: failed to mount sdcard");
+        printk(KERN_ERR "failed to mount sdcard");
     }
 }
 
@@ -78,7 +78,7 @@ int sdmmc_read_file(const char *file_name, unsigned char **file_obj, int *file_s
     // open file
     fs_ret = f_open(&file, file_name, FA_OPEN_EXISTING | FA_READ);
     if (fs_ret != FR_OK) {
-        printf("Error: file doesn't exist\r\n");
+        printk(KERN_ERR "file doesn't exist");
         return -ENOENT;
     }
 
@@ -86,14 +86,14 @@ int sdmmc_read_file(const char *file_name, unsigned char **file_obj, int *file_s
     *file_obj = (unsigned char *)SDRAM_BASE_ADDR;
     if (*file_obj == NULL) {
         f_close(&file);
-        printf("Error: memory alloc failed for file\r\n");
+        printk(KERN_ERR "memory alloc failed for file");
         return -ENOMEM;
     }
 
     // read
     fs_ret = f_read(&file, *file_obj, f_size(&file), &bytes_read);
     if (fs_ret != FR_OK || bytes_read != f_size(&file)) {
-        printf("Error: failed in reading file\r\n");
+        printk(KERN_ERR "failed in reading file");
         f_close(&file);
         return -EIO;
     }

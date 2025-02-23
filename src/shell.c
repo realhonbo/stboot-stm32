@@ -15,6 +15,34 @@
 #include "errno.h"
 #include "cmd.h"
 
+/*
+ * ascii escape character code
+ */
+#define hide_cursor()   printf("\033[?25l")
+#define show_cursor()   printf("\033[?25h");
+
+static void backspace(int ch)
+{
+    // default 1 -> although if 0: backspace 1
+    if (ch > 0) {
+        printf("\033[%dD", ch);
+    }
+}
+
+static void move_cursor(int ch)
+{
+    printf("\033[%dG", ch);
+}
+
+static void clear_to_eol(void)
+{
+    printf("\033[K");
+}
+
+
+/*
+ * shell
+ */
 #define MAX_HISTORY_LINE   32
 #define MAX_CMD_LENGTH     64
 
@@ -26,9 +54,7 @@ static void add_command(struct cmd *command)
     head->next = command;
 }
 
-/*
- * cmd cache
- */
+// cmd cache
 struct cc_cache {
     char cache[MAX_HISTORY_LINE][MAX_CMD_LENGTH];
     int tail; // after last elem
@@ -143,8 +169,8 @@ static void command_read(char *buf)
         getchar();
         switch (getchar()) {
         case 'B': // next command
-            for(i = 0; i < strlen(buf); i++)
-                printf("\b \b");
+            backspace(strlen(buf));
+            clear_to_eol();
             load_nextcmd(buf);
             idx = strlen(buf);
             adx = idx;
@@ -157,8 +183,8 @@ static void command_read(char *buf)
             }
             break;
         case 'A': // last command
-            for(i = 0; i < strlen(buf); i++)
-                printf("\b \b");
+            backspace(strlen(buf));
+            clear_to_eol();
             load_lastcmd(buf);
             idx = strlen(buf);
             adx = idx;
@@ -166,7 +192,7 @@ static void command_read(char *buf)
             break;
         case 'D': // left
             if (adx > 0) {
-                printf("\033[D");
+                backspace(1);
                 adx--;
             }
             break;
@@ -174,11 +200,10 @@ static void command_read(char *buf)
             while ((rc = getchar()) != '~');
         }
         continue;
-    case 127: // Backspace
+    case 127: // Backspace key
         if (adx > 0) {
             printf("\b \b%s \b", &buf[adx]);
-            for (i = 0; i < idx - adx; i++)
-                putchar('\b');
+            backspace(idx - adx);
             memmove(&buf[adx-1], &buf[adx], idx-adx);
             buf[--idx] = '\0';
             --adx;
@@ -207,11 +232,10 @@ static void command_read(char *buf)
         memset(buf, 0, strlen(buf));
         return;
     default:
-        if (unlikely( !(idx < MAX_CMD_LENGTH) ))
+        if (unlikely( idx >= MAX_CMD_LENGTH ))
             break;
         printf("%c%s \b", rc, &buf[adx]);
-        for (i = 0; i < idx - adx; i++)
-            putchar('\b');
+        backspace(idx - adx);
         // insert
         if (idx == adx) {
             buf[idx++] = rc;
@@ -240,5 +264,5 @@ static void parse_command(const char *buf) {
             return;
         }
 
-    pr_info("error: %s: no such a command", buf);
+    printk(KERN_ERR "%s: no such a command", buf);
 }

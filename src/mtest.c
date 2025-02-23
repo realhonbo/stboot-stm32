@@ -121,17 +121,17 @@ __itcm void memory_speed_test(void)
 
 /* SDRAM */
     memory_write((int *)SDRAM_BASE_ADDR, RW_SIZE);
-    printf("sdram write: %d MB/s\r\n", SPEED(RW_SIZE));
+    printk("sdram write: %d MB/s", SPEED(RW_SIZE));
 
     memory_read((int *)SDRAM_BASE_ADDR, RW_SIZE);
-    printf("sdram  read: %d MB/s\r\n", SPEED(RW_SIZE));
+    printk("sdram  read: %d MB/s", SPEED(RW_SIZE));
 
 /* QSPI Flash */
     QSPI_W25Qxx_MMMode();
     memory_read((int *)QSPI_FLASH_BASE_ADDR, RD_SIZE);
-    printf("qspi-flash read(mm-mode): %d MB/s\r\n", SPEED(RD_SIZE));
+    printk("qspi-flash read(mm-mode): %d MB/s", SPEED(RD_SIZE));
     HAL_QSPI_Abort(&hqspi);
     QSPI_W25Qxx_Init();
 
-    printf("\r\n");
+    printk("");
 }

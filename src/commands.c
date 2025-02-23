@@ -86,26 +86,55 @@ static int parse_address(const char *buf, int *kernel, int *fdt) {
     return 0;
 }
 
-/**
- * memory display and write
+/*
+ * boot
  */
-static void md(int *address, int length)
+int do_boot(const char *buf)
 {
-    int i;
+    int kernel, fdt;
 
-    for (i = 0; i < length; i++) {
-        printf("%08x ", address[i]);
-        if (i % 4 == 3)
-            printf("\r\n");
+    if(parse_address(buf, &kernel, &fdt))
+        return -EFAULT;
+    kernel_entry(kernel, fdt);
+    return 0;
+}
+
+void help_boot(void)
+{
+    printsh("boot <kernel address> - <fdt address>");
+    printsh("use default address: boot ");
+}
+SHELL_EXPORT_CMD(boot, help_boot, do_boot);
+
+/*
+ * help
+ */
+int do_help(const char *buf)
+{
+    struct cmd *iter;
+    printk("support command:");
+    for (iter = head->next; iter; iter = iter->next) {
+        printk("  %s", iter->name);
+        if (iter->help)
+            iter->help();
     }
-    printf("\r\n");
+    return 0;
 }
+SHELL_EXPORT_CMD(help, NULL, do_help);
 
-static void mw(int *address, int value)
+/*
+ * clear
+ */
+int do_clear(const char *buf)
 {
-    *address = value;
+    printf("\033[2J\033[H");
+    return 0;
 }
+SHELL_EXPORT_CMD(clear, NULL, do_clear);
 
+/*
+ * md: memory display
+ */
 static int parse_mm(const char *buf, int *address, int *length, int hex)
 {
     int idx = 0;
@@ -126,7 +155,73 @@ static int parse_mm(const char *buf, int *address, int *length, int hex)
     return 0;
 }
 
-/* cache control */
+static void md(int *address, int length)
+{
+    int i;
+
+    for (i = 0; i < length; i++) {
+        printf("%08x ", address[i]);
+        if (i % 4 == 3)
+            printf("\r\n");
+    }
+    printf("\r\n");
+}
+
+int do_md(const char *buf)
+{
+    int address, length;
+
+    if (parse_mm(buf, &address, &length, 0))
+        return -EFAULT;
+    md((int *)address, length);
+    return 0;
+}
+
+void help_md(void)
+{
+    printsh("md <address> <length>");
+    printsh("read CPUID: md e000ed00 1");
+    printsh("411fc271");
+}
+SHELL_EXPORT_CMD(md, help_md, do_md);
+
+/*
+ * mw: memory write
+ */
+static void mw(int *address, int value)
+{
+    *address = value;
+}
+
+int do_mw(const char *buf)
+{
+    int address, value;
+
+    if (parse_mm(buf, &address, &value, 1))
+        return -EFAULT;
+    mw((int *)address, value);
+    return 0;
+}
+
+void help_mw(void)
+{
+    printsh("mw <address> <value>");
+}
+SHELL_EXPORT_CMD(mw, help_mw, do_mw);
+
+/*
+ * mtest
+ */
+int do_mtest(const char *buf)
+{
+    memory_speed_test();
+    return 0;
+}
+SHELL_EXPORT_CMD(mtest, NULL, do_mtest);
+
+/*
+ * cache control
+ */
 static int parse_cache(const char *buf)
 {
     int idx = 0;
@@ -148,13 +243,13 @@ static int parse_cache(const char *buf)
     {
         if (status == 105) {
             SCB_InvalidateICache();
-            printf("cache: icache invalid\r\n");
+            printk(KERN_INFO "cache: icache invalid");
         } else if (status == 48) {
             SCB_DisableICache();
-            printf("cache: icache disabled\r\n");
+            printk(KERN_INFO "cache: icache disabled");
         } else {
             SCB_EnableICache();
-            printf("cache: icache enabled\r\n");
+            printk(KERN_INFO "cache: icache enabled");
         }
         return 0;
     }
@@ -163,120 +258,21 @@ static int parse_cache(const char *buf)
         SCB_CleanDCache();
         if (status == 105) {
             SCB_InvalidateDCache();
-            printf("cache: dcache invalid\r\n");
+            printk(KERN_INFO "cache: dcache invalid");
         }else if (status == 48) {
             SCB_DisableDCache();
-            printf("cache: dcache disabled\r\n");
+            printk(KERN_INFO "cache: dcache disabled");
         } else {
             SCB_EnableDCache();
-            printf("cache: dcache enabled\r\n");
+            printk(KERN_INFO "cache: dcache enabled");
         }
         return 0;
     }
 
-    pr_info("error: no command arg %c", c);
+    printk(KERN_ERR "no command arg %c", c);
     return -EFAULT;
 }
 
-/*
- * boot
- */
-int do_boot(const char *buf)
-{
-    int kernel, fdt;
-
-    if(parse_address(buf, &kernel, &fdt))
-        return -EFAULT;
-    kernel_entry(kernel, fdt);
-    return 0;
-}
-
-void help_boot(void)
-{
-    println(L2, "boot <kernel address> - <fdt address>");
-    println(L2, "use default address: boot ");
-}
-SHELL_EXPORT_CMD(boot, help_boot, do_boot);
-
-/*
- * help
- */
-int do_help(const char *buf)
-{
-    struct cmd *iter;
-    printf("support command:\r\n");
-    for (iter = head->next; iter; iter = iter->next) {
-        printf("  %s\r\n", iter->name);
-        if (iter->help)
-            iter->help();
-    }
-    return 0;
-}
-SHELL_EXPORT_CMD(help, NULL, do_help);
-
-/*
- * clear
- */
-int do_clear(const char *buf)
-{
-    printf("\033[2J\033[H");
-    return 0;
-}
-SHELL_EXPORT_CMD(clear, NULL, do_clear);
-
-/*
- * md: memory display
- */
-int do_md(const char *buf)
-{
-    int address, length;
-
-    if (parse_mm(buf, &address, &length, 0))
-        return -EFAULT;
-    md((int *)address, length);
-    return 0;
-}
-
-void help_md(void)
-{
-    println(L2, "md <address> <length>");
-    println(L2, "read CPUID: md e000ed00 1");
-    println(L2, "411fc271");
-}
-SHELL_EXPORT_CMD(md, help_md, do_md);
-
-/*
- * mw: memory write
- */
-int do_mw(const char *buf)
-{
-    int address, value;
-
-    if (parse_mm(buf, &address, &value, 1))
-        return -EFAULT;
-    mw((int *)address, value);
-    return 0;
-}
-
-void help_mw(void)
-{
-    println(L2, "mw <address> <value>");
-}
-SHELL_EXPORT_CMD(mw, help_mw, do_mw);
-
-/*
- * mtest
- */
-int do_mtest(const char *buf)
-{
-    memory_speed_test();
-    return 0;
-}
-SHELL_EXPORT_CMD(mtest, NULL, do_mtest);
-
-/*
- * cache
- */
 int do_cache(const char *buf)
 {
     parse_cache(buf);
@@ -285,9 +281,9 @@ int do_cache(const char *buf)
 
 void help_cache(void)
 {
-    println(L2, "cache <name> <op>");
-    println(L2, "disable icache: cache i 0");
-    println(L2, "invalid dcache: cache d i");
+    printsh("cache <name> <op>");
+    printsh("disable icache: cache i 0");
+    printsh("invalid dcache: cache d i");
 }
 SHELL_EXPORT_CMD(cache, help_cache, do_cache);
 
@@ -296,7 +292,7 @@ SHELL_EXPORT_CMD(cache, help_cache, do_cache);
  */
 int do_version(const char *buf)
 {
-    printf("st-boot %s\r\n", STBOOT_VERSION);
+    printk("st-boot %s", STBOOT_VERSION);
     return 0;
 }
 SHELL_EXPORT_CMD(version, NULL, do_version);
@@ -317,9 +313,9 @@ SHELL_EXPORT_CMD(reset, NULL, do_reset);
 void qftool_map(void)
 {
     if (QSPI_W25Qxx_MMMode()) {
-        pr_info("Error: failed to map qspi-flash to memory space");
+        printk(KERN_ERR "failed to map qspi-flash to memory space");
     }
-    pr_info("qspi: memory mapped success");
+    printk(KERN_INFO "qspi: memory mapped success");
 }
 
 void qftool_unmap(void)
@@ -328,7 +324,7 @@ void qftool_unmap(void)
 
     HAL_QSPI_Abort(&hqspi);
     QSPI_W25Qxx_Init();
-    pr_info("qspi: memory unmapped");
+    printk(KERN_INFO "qspi: memory unmapped");
 }
 
 int do_qftool(const char *buf)
@@ -358,8 +354,8 @@ int do_qftool(const char *buf)
 
 void help_qftool(void)
 {
-    println(L2, "qftool <map/unmap>");
-    println(L2, "a tool for controlling qspi-flash");
+    printsh("qftool <map/unmap>");
+    printsh("a tool for controlling qspi-flash");
 }
 SHELL_EXPORT_CMD(qftool, help_qftool, do_qftool);
 
@@ -395,15 +391,15 @@ int update_fdt(void)
 
     if (ret == FR_OK) {
         // write into qspi-flash
-        printf("image size: %3.2fKB, erasing flash ...\r\n", (float)size/1024);
+        printk("image size: %3.2fKB, erasing flash ...", (float)size/1024);
         QSPI_W25Qxx_BlockErase_64K(FDT_ADDR-QSPI_FLASH_BASE_ADDR);
-        printf("writing dtb ...\r\n");
+        printk("writing dtb ...");
         ret = QSPI_W25Qxx_WriteBuffer(fdt, FDT_ADDR-QSPI_FLASH_BASE_ADDR, size);
         if (ret) {
-            printf("Error: %d in writing qspi-flash\r\n", ret);
+            printk(KERN_ERR "%d in writing qspi-flash", ret);
             return -EIO;
         }
-        printf("update fdt success\r\n");
+        printk("update fdt success");
     }
     return 0;
 }
@@ -427,7 +423,7 @@ int update_kernel(void)
         // read bitmap
         ret = QSPI_W25Qxx_ReadBuffer(block_bitmap, BITMAP_SECTOR, sizeof(block_bitmap));
         if (ret) {
-            printf("Error: %d in reading bitmap\r\n", ret);
+            printk(KERN_ERR "%d in reading bitmap", ret);
             return -EIO;
         }
         // search re-startup block
@@ -447,7 +443,7 @@ int update_kernel(void)
     ret = sdmmc_read_file("0:kernel", &image_buffer, &size);
 
     if (ret == FR_OK) {
-        printf("image size: %3.2fMB, ready to erase flash:\r\n", (float)size/1024/1024);
+        printk("image size: %3.2fMB, ready to erase flash:", (float)size/1024/1024);
 
         while (eaddr < size) {
             i = (eaddr >> 16) - 1;
@@ -460,7 +456,7 @@ int update_kernel(void)
             printf("\rwriting kernel image [%3d]", i);
             ret = QSPI_W25Qxx_WriteBuffer(image_buffer + i * 0x10000, eaddr, 0x10000);
             if (ret) {
-                printf("\r\nError: %d in writing qspi-flash\r\n", ret);
+                printk(KERN_ERR "\r\n%d in writing qspi-flash", ret);
                 return -EIO;
             }
 
@@ -473,10 +469,10 @@ int update_kernel(void)
 
         ret = QSPI_W25Qxx_WritePage(&(uint8_t){0x00}, BITMAP_SECTOR+BITMAP_SIZE, 1);
         if (ret) {
-            printf("Error: %d in writing calibration\r\n", ret);
+            printk(KERN_ERR "%d in writing calibration", ret);
             return -EIO;
         }
-        printf("\r\nupdate kernel success\r\n");
+        printk("\r\nupdate kernel success");
     }
     return 0;
 }
@@ -508,7 +504,7 @@ int do_update(const char *buf)
 
 void help_update(void)
 {
-    println(L2, "update <fdt/kernel>");
-    println(L2, "! need you modify the image file name to \"fdt\" or \"kernel\" in advance");
+    printsh("update <fdt/kernel>");
+    printsh("! need you modify the image file name to \"fdt\" or \"kernel\" in advance");
 }
 SHELL_EXPORT_CMD(update, help_update, do_update);

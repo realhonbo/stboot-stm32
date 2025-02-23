@@ -24,6 +24,6 @@ void error_print(void)
     :"=r"(ipsr),"=r"(lr),"=r"(cfsr),"=r"(hfsr)
     );
 
-    pr_info("Error: Unhandled exception: IPSR = 0x%08x LR = 0x%08x CFSR = 0x%08x HFSR = 0x%08x",
+    printk(KERN_ERR "Unhandled exception: IPSR = 0x%08x LR = 0x%08x CFSR = 0x%08x HFSR = 0x%08x",
             ipsr, lr, cfsr, hfsr);
 }

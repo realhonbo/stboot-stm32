@@ -22,7 +22,7 @@ static void copy_to_tcm(void)
     memcpy(&_itcm_start, &_itcm_at_start, (int)(&_itcm_size));
 
     __enable_irq();
-    pr_info("tcm: vectors -> 0x%08x, .itcm -> 0x%08x",
+    printk(KERN_INFO "tcm: vectors -> 0x%08x, .itcm -> 0x%08x",
             &_isr_start, &_itcm_start);
 }
 
@@ -45,10 +45,10 @@ void kernel_entry(int kernel, int fdt)
         kernel = KERNEL_ADDR;
         fdt  = FDT_ADDR;
     }
-    pr_info("boot: kernel addr: 0x%x, fdt addr: 0x%x", kernel, fdt);
-    pr_info("");
-    pr_info("boot: ready to boot kernel ...");
-    pr_info("");
+    printk(KERN_INFO "boot: kernel addr: 0x%x, fdt addr: 0x%x", kernel, fdt);
+    printk(KERN_INFO "");
+    printk(KERN_INFO "boot: ready to boot kernel ...");
+    printk(KERN_INFO "");
 
     // dcache should be closed before kernel init
     QSPI_W25Qxx_MMMode();
@@ -84,9 +84,9 @@ int main(void) {
 
     // set nor_flash, sdram and sd
     if (QSPI_W25Qxx_Init())
-        pr_info("qspi: w25q64 flash init failed");
+        printk(KERN_ERR "qspi: w25q64 flash init failed");
     else
-        pr_info("qspi: w25q64 flash init success");
+        printk(KERN_INFO "qspi: w25q64 flash init success");
 
     sdram_init();
     sdmmc_mount();
