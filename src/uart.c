@@ -38,11 +38,11 @@ int _write(int file, char *ptr, int len)
     return len;
 }
 
-int __io_getchar(void)
+int _read(int file, char *ptr, int len)
 {
-    uint8_t ch;
-    HAL_UART_Receive(&huart, &ch, 1, HAL_MAX_DELAY);
-    return ch;
+    (void)file;
+    HAL_UART_Receive(&huart, (uint8_t *)ptr, len, HAL_MAX_DELAY);
+    return len;
 }
 
 static float get_log_time(void)

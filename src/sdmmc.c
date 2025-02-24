@@ -61,7 +61,7 @@ void sdmmc_mount(void)
         printk(KERN_INFO "sdmmc: fatfs mounted");
         sdmmc_get_capacity();
     } else {
-        printk(KERN_ERR "failed to mount sdcard");
+        printk(KERN_WARNING "failed to mount sdcard");
     }
 }
 

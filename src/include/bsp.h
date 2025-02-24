@@ -1,7 +1,7 @@
 #ifndef BSP_EASYCONFIG_H
 #define BSP_EASYCONFIG_H
 
-#define STBOOT_VERSION         "2.5.2 (develop)"
+#define STBOOT_VERSION         "2.5.3 (stable)"
 
 #define HSE_FREQUENCY          25
 

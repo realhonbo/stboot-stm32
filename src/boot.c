@@ -84,9 +84,9 @@ int main(void) {
 
     // set nor_flash, sdram and sd
     if (QSPI_W25Qxx_Init())
-        printk(KERN_ERR "qspi: w25q64 flash init failed");
+        printk(KERN_ERR "flash: w25q64 init failed");
     else
-        printk(KERN_INFO "qspi: w25q64 flash init success");
+        printk(KERN_INFO "flash: w25q64 init success");
 
     sdram_init();
     sdmmc_mount();

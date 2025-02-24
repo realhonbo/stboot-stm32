@@ -18,8 +18,12 @@
 /*
  * ascii escape character code
  */
+#define sav_cur_pos()   printf("\033[s")
+#define rec_cur_pos()   printf("\033[u")
 #define hide_cursor()   printf("\033[?25l")
-#define show_cursor()   printf("\033[?25h");
+#define show_cursor()   printf("\033[?25h")
+#define move_cursor(ch) printf("\033[%dG", ch)
+#define clear_to_eol()  printf("\033[K")
 
 static void backspace(int ch)
 {
@@ -29,14 +33,11 @@ static void backspace(int ch)
     }
 }
 
-static void move_cursor(int ch)
+static void forwspace(int ch)
 {
-    printf("\033[%dG", ch);
-}
-
-static void clear_to_eol(void)
-{
-    printf("\033[K");
+    if (ch > 0) {
+        printf("\033[%dC", ch);
+    }
 }
 
 
@@ -127,7 +128,7 @@ void commands_init(void)
  */
 __itcm void console_cmd(void)
 {
-    char buf[MAX_CMD_LENGTH];
+    char buf[MAX_CMD_LENGTH+1];
 
 #ifdef CONSOLE_CMD
     commands_init();
@@ -135,7 +136,7 @@ __itcm void console_cmd(void)
     setvbuf(stdout, NULL, _IONBF, 0);
 
 input:
-    memset(buf, 0, MAX_CMD_LENGTH);
+    memset(buf, 0, sizeof(buf));
     printf("=> ");
     command_read(buf);
     parse_command(buf);
@@ -169,26 +170,30 @@ static void command_read(char *buf)
         getchar();
         switch (getchar()) {
         case 'B': // next command
+            hide_cursor();
             backspace(strlen(buf));
             clear_to_eol();
             load_nextcmd(buf);
             idx = strlen(buf);
             adx = idx;
             printf("%s", buf);
+            show_cursor();
             break;
         case 'C': // right
             if (adx < idx) {
-                printf("\033[C");
+                forwspace(1);
                 adx++;
             }
             break;
         case 'A': // last command
+            hide_cursor();
             backspace(strlen(buf));
             clear_to_eol();
             load_lastcmd(buf);
             idx = strlen(buf);
             adx = idx;
             printf("%s", buf);
+            show_cursor();
             break;
         case 'D': // left
             if (adx > 0) {
@@ -202,8 +207,13 @@ static void command_read(char *buf)
         continue;
     case 127: // Backspace key
         if (adx > 0) {
-            printf("\b \b%s \b", &buf[adx]);
-            backspace(idx - adx);
+            backspace(1);
+            hide_cursor();
+            sav_cur_pos();
+            clear_to_eol();
+            printf("%s", &buf[adx]);
+            rec_cur_pos();
+            show_cursor();
             memmove(&buf[adx-1], &buf[adx], idx-adx);
             buf[--idx] = '\0';
             --adx;
@@ -234,8 +244,13 @@ static void command_read(char *buf)
     default:
         if (unlikely( idx >= MAX_CMD_LENGTH ))
             break;
-        printf("%c%s \b", rc, &buf[adx]);
-        backspace(idx - adx);
+        hide_cursor();
+        sav_cur_pos();
+        clear_to_eol();
+        printf("%c%s", rc, &buf[adx]);
+        rec_cur_pos();
+        forwspace(1);
+        show_cursor();
         // insert
         if (idx == adx) {
             buf[idx++] = rc;
