@@ -1,3 +1,6 @@
+Session.vim
+compile_commands.json
+
 /.cache
 /build
 /codelines
